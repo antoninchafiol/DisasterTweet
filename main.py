@@ -11,6 +11,9 @@ import matplotlib.pyplot as plt
 from sklearn.feature_extraction.text import TfidfVectorizer,CountVectorizer
 from torchtext.vocab import GloVe
 from torch.utils.data import Dataset
+from nltk import word_tokenize
+from nltk.corpus import stopwords, webtext
+import nltk
 
 from textfn import *
 
@@ -54,19 +57,25 @@ def EDA(df):
     # hashtag_count number of hashtags (#) in text
     # mention_count number of mentions (@) in text
 
-def cleaning(text):
+def cleaning(df):
+    df['cleaned_text'] = df['text']
     # Delete hashtags and @
-    r_hashtagsAt(text) 
+    df['cleaned_text'] = df['cleaned_text'].apply(r_hashtagsAt)
     # Lowercasing
-    r_upper(text)
+    df['cleaned_text'] = df['cleaned_text'].apply(r_upper)
     # Punctuation & special Chars
-    r_punctuation(text)
+    df['cleaned_text'] = df['cleaned_text'].apply(entity_ref)
+    df['cleaned_text'] = df['cleaned_text'].apply(r_punctuation)
     # Expand contractions
-    expand_contractions(text)
+    df['cleaned_text'] = df['cleaned_text'].apply(expand_contractions)
     # URLs
-    r_url(text)
-
+    df['cleaned_text'] = df['cleaned_text'].apply(r_url)
+    # Numbers
+    df['cleaned_text'] = df['cleaned_text'].apply(r_number)
     # Stopword cleaning
+    df['cleaned_text'] = df['cleaned_text'].apply(word_tokenize)
+    print(df['cleaned_text'][0])
+
     # Lemmatization
     # 
     return 0 
@@ -83,10 +92,6 @@ def embedding(df):
     return 0 
 
 if __name__ == '__main__':
+    # nltk.download('webtext')
     df = pd.read_csv("dataset/train.csv")
-    # print(df)
-    # for tweet in df['text']:
-
-    # embedding(df)
-    print(r_upper("AAAAAAAAAAAAAA9Test 9@skdjfhjksdhfjkh .e;n/c'o#r]e u55468792314n aut[r$e%^&e*&s(t) avec #cewlinedionBBBBBBBBBBBBB "))
-    # EDA(df)
+    cleaning(df)
