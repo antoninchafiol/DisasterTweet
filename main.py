@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 import pandas as pd
 import numpy as np
+import math
 import re
 import seaborn as sns
 
@@ -57,33 +58,41 @@ def EDA(df):
     # hashtag_count number of hashtags (#) in text
     # mention_count number of mentions (@) in text
 
-def cleaning(df):
-    # Copy column
-    df['cleaned_text'] = df['text']
+def cleaningProcessing(df):
     # Delete hashtags and @
-    df['cleaned_text'] = df['cleaned_text'].apply(r_hashtagsAt)
+    df['text'] = df['text'].apply(r_hashtagsAt)
     # Lowercasing
-    df['cleaned_text'] = df['cleaned_text'].apply(r_upper)
+    df['text'] = df['text'].apply(r_upper)
     # Punctuation & special Chars
-    df['cleaned_text'] = df['cleaned_text'].apply(entity_ref)
-    df['cleaned_text'] = df['cleaned_text'].apply(r_punctuation)
+    df['text'] = df['text'].apply(entity_ref)
+    df['text'] = df['text'].apply(r_punctuation)
     # Expand contractions
-    df['cleaned_text'] = df['cleaned_text'].apply(expand_contractions)
+    df['text'] = df['text'].apply(expand_contractions)
     # URLs
-    df['cleaned_text'] = df['cleaned_text'].apply(r_url)
+    df['text'] = df['text'].apply(r_url)
     # Numbers
-    df['cleaned_text'] = df['cleaned_text'].apply(r_number)
+    df['text'] = df['text'].apply(r_number)
     # Stopword cleaning
-    df['cleaned_text'] = df['cleaned_text'].apply(word_tokenize)
-    df['cleaned_text'] = df['cleaned_text'].apply(r_stopwords)
+    df['text'] = df['text'].apply(word_tokenize)
+    df['text'] = df['text'].apply(r_stopwords)
     # Stemming and/or Lemmatization
-    df['cleaned_text'] = df['cleaned_text'].apply(lemmatization)
-    # df['cleaned_text'] = df['cleaned_text'].apply(stemming)
+    # --- Lemmatization
+    df['text'] = df['text'].apply(lemmatization)
+    # --- Stemming
+    # df['text'] = df['text'].apply(stemming)
 
-    print(df['cleaned_text'])
-    return 0 
+    # ----- 
+    # Dropping the location column - 
+    # Want to keep it simple for now + it might now make big difference on accuracy
+    # ----- 
+    df = df.drop('location', axis=1)
 
-def embedding(df):
+    # Tranforming the keyword column
+    df['keyword'] =  df['keyword'].apply(lambda x: 0 if type(x) == float else x)
+
+    return df 
+
+def vectorization(df):
     test = df['text']
     # CountVector
     vectorizer = CountVectorizer()
@@ -102,7 +111,7 @@ if __name__ == '__main__':
     # this should give some better results 
     # (as for ex #earthquake might be good to keep)
     df = pd.read_csv("dataset/train.csv")
-    cleaning(df)
-    print(df.head(5))
+    df = cleaningProcessing(df)
+    print(df)
 
 
