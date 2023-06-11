@@ -74,10 +74,11 @@ def cleaning(df):
     df['cleaned_text'] = df['cleaned_text'].apply(r_number)
     # Stopword cleaning
     df['cleaned_text'] = df['cleaned_text'].apply(word_tokenize)
-    print(df['cleaned_text'][0])
+    df['cleaned_text'] = df['cleaned_text'].apply(r_stopwords)
 
     # Lemmatization
-    # 
+
+
     return 0 
 
 def embedding(df):
@@ -91,9 +92,16 @@ def embedding(df):
     # word2Vec
     return 0 
 
-if __name__ == '__main__':
-    # nltk.download('webtext')
-    df = pd.read_csv("dataset/train.csv")
-    # cleaning(df)
 
-    
+if __name__ == '__main__':
+    # nltk.download('stopwords')
+
+    # Note for later:
+    # Need to check if by processing the hashtags differently, 
+    # this should give some better results 
+    # (as for ex #earthquake might be good to keep)
+    df = pd.read_csv("dataset/train.csv")
+    cleaning(df)
+    print(df.head(5))
+
+

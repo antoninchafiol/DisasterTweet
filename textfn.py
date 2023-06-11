@@ -137,5 +137,8 @@ def r_hashtagsAt(text):
 ###### ----
 
 def r_stopwords(tokenized_text):
-    stp_words = set(stopwords.words('english'))
-    print(tokenized_text[0])
+    stop = set(stopwords.words('english'))
+    return([item for item in tokenized_text if item not in stop])
+
+def lemma(tokenized_text):
+    return 0 
