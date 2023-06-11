@@ -10,9 +10,9 @@ import matplotlib.pyplot as plt
 
 from sklearn.feature_extraction.text import TfidfVectorizer,CountVectorizer
 from torchtext.vocab import GloVe
-from gensim import 
-
 from torch.utils.data import Dataset
+
+from textfn import *
 
 def EDA(df):
     print("-----------------------[Information]-------------------------") 
@@ -54,12 +54,29 @@ def EDA(df):
     # hashtag_count number of hashtags (#) in text
     # mention_count number of mentions (@) in text
 
-def cleaning():
-    re.sub(r'()', )
+def cleaning(text):
+    # Delete hashtags and @
+    r_hashtagsAt(text) 
+    # Lowercasing
+    r_upper(text)
+    # Punctuation & special Chars
+    r_punctuation(text)
+    # Expand contractions
+    expand_contractions(text)
+    # URLs
+    r_url(text)
+
+    # Stopword cleaning
+    # Lemmatization
+    # 
     return 0 
 
-def embedding():
+def embedding(df):
+    test = df['text']
     # CountVector
+    vectorizer = CountVectorizer()
+    vectorized = vectorizer.fit_transform(test)
+    print(vectorized[0].toarray())
     # Tfid
     # GloVe
     # word2Vec
@@ -67,6 +84,9 @@ def embedding():
 
 if __name__ == '__main__':
     df = pd.read_csv("dataset/train.csv")
-    # print(df["text"][0:5])
-    embedding()
+    # print(df)
+    # for tweet in df['text']:
+
+    # embedding(df)
+    print(r_upper("AAAAAAAAAAAAAA9Test 9@skdjfhjksdhfjkh .e;n/c'o#r]e u55468792314n aut[r$e%^&e*&s(t) avec #cewlinedionBBBBBBBBBBBBB "))
     # EDA(df)
