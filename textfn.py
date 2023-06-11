@@ -1,10 +1,10 @@
-import re
-from nltk.corpus import stopwords, webtext
 # This file is filled with text formatting fn, usually needed for NLP.
 
 
 ###### ----
 ###### Cleaning data fn
+###### Import:
+import re
 ###### ----
 
 def r_upper(text):
@@ -134,11 +134,29 @@ def r_hashtagsAt(text):
 
 ###### ----
 ###### Tokenization & Vectorization
+###### Import:
+from nltk.corpus import stopwords, webtext
+from nltk.stem import PorterStemmer, WordNetLemmatizer
+from nltk import pos_tag
 ###### ----
 
 def r_stopwords(tokenized_text):
     stop = set(stopwords.words('english'))
     return([item for item in tokenized_text if item not in stop])
 
-def lemma(tokenized_text):
-    return 0 
+def lemmatization(tokenized_text):
+    lem = WordNetLemmatizer()
+    return [lem.lemmatize(word.lower(), pos=penn2morphy(tag)) for word, tag in pos_tag(tokenized_text)]
+
+def stemming(tokenized_text):
+    stem = PorterStemmer()
+    return([stem(item) for item in tokenized_text])
+
+def penn2morphy(penntag):
+    """ Converts Penn Treebank tags to WordNet. """
+    morphy_tag = {'NN':'n', 'JJ':'a',
+                  'VB':'v', 'RB':'r'}
+    try:
+        return morphy_tag[penntag[:2]]
+    except:
+        return 'n' 

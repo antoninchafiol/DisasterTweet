@@ -58,6 +58,7 @@ def EDA(df):
     # mention_count number of mentions (@) in text
 
 def cleaning(df):
+    # Copy column
     df['cleaned_text'] = df['text']
     # Delete hashtags and @
     df['cleaned_text'] = df['cleaned_text'].apply(r_hashtagsAt)
@@ -75,10 +76,11 @@ def cleaning(df):
     # Stopword cleaning
     df['cleaned_text'] = df['cleaned_text'].apply(word_tokenize)
     df['cleaned_text'] = df['cleaned_text'].apply(r_stopwords)
+    # Stemming and/or Lemmatization
+    df['cleaned_text'] = df['cleaned_text'].apply(lemmatization)
+    # df['cleaned_text'] = df['cleaned_text'].apply(stemming)
 
-    # Lemmatization
-
-
+    print(df['cleaned_text'])
     return 0 
 
 def embedding(df):
@@ -94,7 +96,6 @@ def embedding(df):
 
 
 if __name__ == '__main__':
-    # nltk.download('stopwords')
 
     # Note for later:
     # Need to check if by processing the hashtags differently, 
