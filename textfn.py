@@ -1,7 +1,11 @@
 import re
-
+from nltk.corpus import stopwords, webtext
 # This file is filled with text formatting fn, usually needed for NLP.
 
+
+###### ----
+###### Cleaning data fn
+###### ----
 
 def r_upper(text):
     return(text.lower())
@@ -11,7 +15,7 @@ def r_punctuation(text):
     # 1st
     # return(re.sub(r'[\.|\,|\@|\#|\!|\?|\+|\"|\&|\~|\[|\]|\{|\}|\||\-|\%|\:|\/|\(|\)|\;|\$|\=|\>|\<|\^|\'|\`|\*]', "", text))
     # 2nd
-    return(re.sub(r'[\.|\,|\!|\?|\+|\"|\&|\~|\[|\]|\{|\}|\||\-|\%|\:|\/|\(|\)|\;|\$|\=|\>|\<|\^|\'|\`|\*]', "", text))
+    return(re.sub(r'[\.|\,|\!|\?|\+|\"|\&|\~|\[|\]|\{|\}|\||\-|\%|\:|\/|\(|\)|\;|\$|\=|\>|\<|\^|\'|\`|\*|\:]', "", text))
 
 def r_number(text):
     return(re.sub(r'[0-9]', "", text))
@@ -125,6 +129,13 @@ def entity_ref(text):
 # designed for the competition for Disaster text. 
 # ------------------------------------------------------------
 
-
 def r_hashtagsAt(text):
     return(re.sub(r'[#|@]\w*\s', "", text))
+
+###### ----
+###### Tokenization & Vectorization
+###### ----
+
+def r_stopwords(tokenized_text):
+    stp_words = set(stopwords.words('english'))
+    print(tokenized_text[0])

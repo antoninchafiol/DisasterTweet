@@ -94,4 +94,6 @@ def embedding(df):
 if __name__ == '__main__':
     # nltk.download('webtext')
     df = pd.read_csv("dataset/train.csv")
-    cleaning(df)
+    # cleaning(df)
+
+    
