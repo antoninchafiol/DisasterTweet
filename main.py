@@ -89,7 +89,10 @@ def cleaningProcessing(df):
 
     # Tranforming the keyword column
     df['keyword'] =  df['keyword'].apply(lambda x: 0 if type(x) == float else x)
+    df['keyword'] =  df['keyword'].apply(lambda x: 0 if type(x) == float else r_number(x))
+    df['keyword'] =  df['keyword'].apply(lambda x: 0 if type(x) == float else r_punctuation(x))
     df['keyword'] =  df['keyword'].apply(lambda x: 0 if x == 0 else word_tokenize(x))
+
     return df 
 
 def vectorization(df):
