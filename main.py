@@ -61,6 +61,8 @@ def EDA(df):
 def cleaningProcessing(df):
     # Delete hashtags and @
     # df['text'] = df['text'].apply(r_hashtagsAt)
+    # URLs
+    df['text'] = df['text'].apply(r_url)
     # Lowercasing
     df['text'] = df['text'].apply(r_upper)
     # Punctuation & special Chars
@@ -68,8 +70,6 @@ def cleaningProcessing(df):
     df['text'] = df['text'].apply(r_punctuation)
     # Expand contractions
     df['text'] = df['text'].apply(expand_contractions)
-    # URLs
-    df['text'] = df['text'].apply(r_url)
     # Numbers
     df['text'] = df['text'].apply(r_number)
     # Stopword cleaning
@@ -111,8 +111,8 @@ if __name__ == '__main__':
     # (as for ex #earthquake might be good to keep)
     df = pd.read_csv("dataset/train.csv")
     df = cleaningProcessing(df)
-    # vectorization(df)
-    df.to_csv("dataset/train_changed_2.csv")
-    print(df)
+    df.to_csv("dataset/train_processed.csv")
+
+
 
 
