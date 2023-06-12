@@ -60,7 +60,7 @@ def EDA(df):
 
 def cleaningProcessing(df):
     # Delete hashtags and @
-    df['text'] = df['text'].apply(r_hashtagsAt)
+    # df['text'] = df['text'].apply(r_hashtagsAt)
     # Lowercasing
     df['text'] = df['text'].apply(r_upper)
     # Punctuation & special Chars
@@ -89,19 +89,18 @@ def cleaningProcessing(df):
 
     # Tranforming the keyword column
     df['keyword'] =  df['keyword'].apply(lambda x: 0 if type(x) == float else x)
-
+    df['keyword'] =  df['keyword'].apply(lambda x: 0 if x == 0 else word_tokenize(x))
     return df 
 
 def vectorization(df):
-    test = df['text']
     # CountVector
     vectorizer = CountVectorizer()
-    vectorized = vectorizer.fit_transform(test)
-    print(vectorized[0].toarray())
+    test = vectorizer.fit_transform(df['text'])
     # Tfid
+    print(test)
     # GloVe
     # word2Vec
-    return 0 
+    return 0
 
 
 if __name__ == '__main__':
@@ -112,6 +111,8 @@ if __name__ == '__main__':
     # (as for ex #earthquake might be good to keep)
     df = pd.read_csv("dataset/train.csv")
     df = cleaningProcessing(df)
+    # vectorization(df)
+    df.to_csv("dataset/train_changed_2.csv")
     print(df)
 
 
