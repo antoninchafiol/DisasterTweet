@@ -60,14 +60,15 @@ def EDA(df):
 
 def cleaningProcessing(df):
     # Delete hashtags and @
-    # df['text'] = df['text'].apply(r_hashtagsAt)
+    df['text'] = df['text'].apply(r_hashtagsAt)
     # URLs
     df['text'] = df['text'].apply(r_url)
-    # Lowercasing
-    df['text'] = df['text'].apply(r_upper)
     # Punctuation & special Chars
+    df['text'] = df['text'].apply(r_specialChar)
     df['text'] = df['text'].apply(entity_ref)
     df['text'] = df['text'].apply(r_punctuation)
+    # Lowercasing
+    df['text'] = df['text'].apply(r_upper)
     # Expand contractions
     df['text'] = df['text'].apply(expand_contractions)
     # Numbers
@@ -89,8 +90,6 @@ def cleaningProcessing(df):
 
     # Tranforming the keyword column
     df['keyword'] =  df['keyword'].apply(lambda x: 0 if type(x) == float else x)
-    df['keyword'] =  df['keyword'].apply(lambda x: 0 if type(x) == float else r_number(x))
-    df['keyword'] =  df['keyword'].apply(lambda x: 0 if type(x) == float else r_punctuation(x))
     df['keyword'] =  df['keyword'].apply(lambda x: 0 if x == 0 else word_tokenize(x))
 
     return df 
@@ -112,10 +111,15 @@ if __name__ == '__main__':
     # Need to check if by processing the hashtags differently, 
     # this should give some better results 
     # (as for ex #earthquake might be good to keep)
+    # df = pd.read_csv("dataset/train.csv")
+    # df = cleaningProcessing(df)
+    # df.to_csv("dataset/train_processed.csv")
     df = pd.read_csv("dataset/train.csv")
     df = cleaningProcessing(df)
     df.to_csv("dataset/train_processed.csv")
-
+    # print(df['text'][38])
+    # df['text'] = df['text'].apply(r_specialChar)
+    # print(df['text'][38])
 
 
 

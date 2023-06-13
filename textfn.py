@@ -10,6 +10,33 @@ import re
 def r_upper(text):
     return(text.lower())
 
+def r_specialChar(text):
+    # Took from https://www.kaggle.com/code/gunesevitan/nlp-with-disaster-texts-eda-cleaning-and-bert
+    text = re.sub(r"\x89Û_", "", text)
+    text = re.sub(r"\x89ÛÒ", "", text)
+    text = re.sub(r"\x89ÛÓ", "", text)
+    text = re.sub(r"\x89ÛÏWhen", "When", text)
+    text = re.sub(r"\x89ÛÏ", "", text)
+    text = re.sub(r"China\x89Ûªs", "China's", text)
+    text = re.sub(r"let\x89Ûªs", "let's", text)
+    text = re.sub(r"\x89Û÷", "", text)
+    text = re.sub(r"\x89Ûª", "", text)
+    text = re.sub(r"\x89Û\x9d", "", text)
+    text = re.sub(r"å_", "", text)
+    text = re.sub(r"\x89Û¢", "", text)
+    text = re.sub(r"\x89Û¢åÊ", "", text)
+    text = re.sub(r"fromåÊwounds", "from wounds", text)
+    text = re.sub(r"åÊ", "", text)
+    text = re.sub(r"åÈ", "", text)
+    text = re.sub(r"JapÌ_n", "Japan", text)    
+    text = re.sub(r"Ì©", "e", text)
+    text = re.sub(r"å¨", "", text)
+    text = re.sub(r"SuruÌ¤", "Suruc", text)
+    text = re.sub(r"åÇ", "", text)
+    text = re.sub(r"å£3million", "3 million", text)
+    text = re.sub(r"åÀ", "", text)
+    return text
+
 def r_punctuation(text):
     # Can "kill" the r_hashtagAt if using the 1st version
     # 1st
@@ -24,7 +51,7 @@ def r_url(text):
     return(re.sub(r"https?:\/\/t.co\/[A-Za-z0-9]+", "", text))
 
 def expand_contractions(text):
-    # Took from https://www.kaggle.com/code/gunesevitan/nlp-with-disaster-texts-eda-cleaning-and-bert/notebook#2.-Meta-Features
+    # Took from https://www.kaggle.com/code/gunesevitan/nlp-with-disaster-texts-eda-cleaning-and-bert
     text = re.sub(r"he's", "he is", text)
     text = re.sub(r"there's", "there is", text)
     text = re.sub(r"We're", "We are", text)
@@ -123,6 +150,7 @@ def entity_ref(text):
     text = re.sub(r"&lt;", "<", text)
     text = re.sub(r"&amp;", "&", text)
     return text
+
 
 # ------------------------------------------------------------
 # The following of this file is specifically 
