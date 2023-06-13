@@ -92,8 +92,8 @@ def cleaningProcessing(df):
     df['keyword'] = df['keyword'].apply(lambda x: 0 if type(x) == float else x)
     df['keyword'] = df['keyword'].apply(lambda x: 0 if x == 0 else re.sub(r'[0-9]', "",x))
     df['keyword'] = df['keyword'].apply(lambda x: 0 if x == 0 else r_punctuation(x))
-
-    df['keyword'] =  df['keyword'].apply(lambda x: 0 if x == 0 else word_tokenize(x))
+    df['keyword'] = df['keyword'].apply(lambda x: 0 if x == 0 else word_tokenize(x))
+    df['keyword'] = df['keyword'].apply(lambda x: 0 if x == 0 else lemmatization(x))
 
     return df 
 
