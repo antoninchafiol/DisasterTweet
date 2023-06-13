@@ -40,12 +40,12 @@ def r_specialChar(text):
 def r_punctuation(text):
     # Can "kill" the r_hashtagAt if using the 1st version
     # 1st
-    return(re.sub(r'[\.|\,|\@|\#|\!|\?|\+|\"|\&|\~|\[|\]|\{|\}|\||\-|\%|\:|\/|\(|\)|\;|\$|\=|\>|\<|\^|\å|\ê|\'|\`|\*]', "", text))
+    return(re.sub(r'[\.|\,|\@|\#|\!|\?|\+|\"|\&|\~|\[|\]|\{|\}|\||\-|\%|\:|\/|\(|\)|\;|\$|\=|\>|\<|\^|\å|\ê|\'|\`|\*]', " ", text))
     # 2nd
     # return(re.sub(r'[\.|\,|\!|\?|\+|\"|\&|\~|\[|\]|\{|\}|\||\-|\%|\:|\/|\(|\)|\;|\$|\=|\>|\<|\^|\'|\`|\*|\:]', "", text))
 
 def r_number(text):
-    return(re.sub(r'[0-9]', "", text))
+    return(re.sub(r'[0-9]', " ", text))
 
 def r_url(text):
     return(re.sub(r"https?:\/\/t.co\/[A-Za-z0-9]+", "", text))

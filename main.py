@@ -89,7 +89,10 @@ def cleaningProcessing(df):
     df = df.drop('location', axis=1)
 
     # Tranforming the keyword column
-    df['keyword'] =  df['keyword'].apply(lambda x: 0 if type(x) == float else x)
+    df['keyword'] = df['keyword'].apply(lambda x: 0 if type(x) == float else x)
+    df['keyword'] = df['keyword'].apply(lambda x: 0 if x == 0 else re.sub(r'[0-9]', "",x))
+    df['keyword'] = df['keyword'].apply(lambda x: 0 if x == 0 else r_punctuation(x))
+
     df['keyword'] =  df['keyword'].apply(lambda x: 0 if x == 0 else word_tokenize(x))
 
     return df 
@@ -117,9 +120,9 @@ if __name__ == '__main__':
     df = pd.read_csv("dataset/train.csv")
     df = cleaningProcessing(df)
     df.to_csv("dataset/train_processed.csv")
-    # print(df['text'][38])
-    # df['text'] = df['text'].apply(r_specialChar)
-    # print(df['text'][38])
-
+    # print(df['keyword'][3204])
+    # df['keyword'] = df['keyword'].apply(lambda x: 0 if x == 0 else re.sub(r'[0-9]', "",x))
+    # df['keyword'] = df['keyword'].apply(lambda x: 0 if x == 0 else re.sub(r'\%', "",x))
+    # print(df['keyword'][3204])
 
 
