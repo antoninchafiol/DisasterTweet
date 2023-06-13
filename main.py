@@ -100,29 +100,24 @@ def cleaningProcessing(df):
 def vectorization(df):
     # CountVector
     vectorizer = CountVectorizer()
-    test = vectorizer.fit_transform(df['text'])
+    vectorized_textc = vectorizer.fit_transform(df['text'])
+    vectorized_keywordc = vectorizer.fit_transform(df['keyword'])
     # Tfid
-    print(test)
     # GloVe
     # word2Vec
-    return 0
+    return vectorized_textc, vectorized_keywordc
 
 
 if __name__ == '__main__':
 
-    # Note for later:
+    # Note for later:\
     # Need to check if by processing the hashtags differently, 
     # this should give some better results 
     # (as for ex #earthquake might be good to keep)
-    # df = pd.read_csv("dataset/train.csv")
-    # df = cleaningProcessing(df)
+
+    df = pd.read_csv("dataset/train_processed.csv")
+    vec_text, vec_keyword = vectorization(df)
+    print(vec_text)
     # df.to_csv("dataset/train_processed.csv")
-    df = pd.read_csv("dataset/train.csv")
-    df = cleaningProcessing(df)
-    df.to_csv("dataset/train_processed.csv")
-    # print(df['keyword'][3204])
-    # df['keyword'] = df['keyword'].apply(lambda x: 0 if x == 0 else re.sub(r'[0-9]', "",x))
-    # df['keyword'] = df['keyword'].apply(lambda x: 0 if x == 0 else re.sub(r'\%', "",x))
-    # print(df['keyword'][3204])
 
 
