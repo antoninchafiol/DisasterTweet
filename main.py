@@ -1,11 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch.utils.data import Dataset, DataLoader
+from torchmetrics import F1Score
 import pandas as pd
 import numpy as np
-import math
-import re
-import seaborn as sns
 
 import matplotlib.pyplot as plt
 
@@ -17,8 +16,9 @@ from nltk.corpus import stopwords, webtext
 import nltk
 
 from textfn import *
+from classes import *
 
-def EDA(df):
+def EDA(df): # Really Quick EDA
     print("-----------------------[Information]-------------------------") 
     print(df.info()) 
     print("-----------------------[Top of Data]-------------------------")
@@ -107,6 +107,15 @@ def vectorization(df):
     # word2Vec
     return vectorized_textc, vectorized_keywordc
 
+class Cdataset():
+    def __init__(self, df):
+        X_train, _ = vectorization(df)
+        self.X = torch.from_numpy(X_train.todense()).float()
+        self.Y = torch.from_numpy(np.array(df['target'])).float()
+    def __len__(self):
+        return self.Y.size()[0]
+    def __getitem__(self, index):
+        return self.X[index], self.Y[index]
 
 if __name__ == '__main__':
 
@@ -115,9 +124,52 @@ if __name__ == '__main__':
     # this should give some better results 
     # (as for ex #earthquake might be good to keep)
 
+    batch_size=128
+    n_epoch = 500
+    input_len = 11501 # Taken from dict size 
+    hidden_size = 3
+    output_size = 1
+    lr = 0.01
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
     df = pd.read_csv("dataset/train_processed.csv")
-    vec_text, vec_keyword = vectorization(df)
-    print(vec_text)
+    ds = Cdataset(df)
+    train_loader = DataLoader(ds, batch_size=batch_size, shuffle=True)
+
+    model = SimpleNet(input_len, hidden_size, output_size)
+    model.to(device)
+    optimizer = torch.optim.SGD(model.parameters(), lr=lr)
+    loss_fn = torch.nn.CrossEntropyLoss()
+    f1 = F1Score(task='binary').to(device)
+
+    lacc = []
+    lloss = []
+    for e in range(n_epoch):
+        e_acc = 0
+        e_loss = 0
+        for X, Y in train_loader:
+            X = X.to(device)
+            Y = Y.to(device)
+            optimizer.zero_grad()
+
+            model.train()
+            with torch.set_grad_enabled(True):
+                y_hat = model(X)
+                loss = loss_fn(y_hat, Y)
+                loss.backward()
+                optimizer.step()
+
+
+            model.eval()
+            with torch.set_grad_enabled(False):
+                y_hat = model(X)
+                loss = loss_fn(y_hat, Y)
+                e_acc  += loss.item() 
+                e_loss += f1(y_hat, Y)
+        lacc.append(e_acc/train_loader.__len__())
+        lloss.append(e_loss/train_loader.__len__())
+        if e%10==0:
+            print('After {} epoch training loss is {}, F1 is {}'.format(e,loss.item(), lacc[-1]))
     # df.to_csv("dataset/train_processed.csv")
 
 
