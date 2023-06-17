@@ -138,16 +138,20 @@ if __name__ == '__main__':
     output_size = 1
     lr = 0.01
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    df_train = pd.read_csv("dataset/train_processed.csv")
+    df_test = pd.read_csv("dataset/test_processed.csv")
+    df_merged = pd.concat([df_train, df_test])
+    df_merged.to_csv('dataset/merged_data.csv')
+    print(df_merged)
+    # df = pd.read_csv("dataset/train_processed.csv")
+    # ds = Cdataset(df, train=True)
+    # train_loader = DataLoader(ds, batch_size=batch_size, shuffle=True)
 
-    df = pd.read_csv("dataset/train_processed.csv")
-    ds = Cdataset(df, train=True)
-    train_loader = DataLoader(ds, batch_size=batch_size, shuffle=True)
-
-    model = SimpleNet(input_len, hidden_size, output_size)
-    model.to(device)
-    optimizer = torch.optim.SGD(model.parameters(), lr=lr)
-    loss_fn = torch.nn.CrossEntropyLoss()
-    f1 = F1Score(task='binary').to(device)
+    # model = SimpleNet(input_len, hidden_size, output_size)
+    # model.to(device)
+    # optimizer = torch.optim.SGD(model.parameters(), lr=lr)
+    # loss_fn = torch.nn.CrossEntropyLoss()
+    # f1 = F1Score(task='binary').to(device)
 
     # Training step
     # lacc = []
@@ -183,23 +187,23 @@ if __name__ == '__main__':
     #         print('After {} epoch training loss is {}, Train F1 is {} - Eval F1: {}'.format(e,loss.item(), train_acc, eval_acc))
 
     # Test data
-    df = pd.read_csv("dataset/test_processed.csv")
-    ds = Cdataset(df, train=False)
-    test_model = SimpleNet(ds.__shape__()[1], hidden_size, output_size)
-    print(model.state_dict())
-    test_model.load_state_dict(model.state_dict()) # Need to be either resized or flushed in order to fit the test data
-    test_model.to(device)
-    test_loader = DataLoader(ds, batch_size=batch_size, shuffle=False)
-    for e in range(n_epoch):
-        for X in test_loader:
-            model.eval()
-            with torch.no_grad():
-                X = X.to(device)
-                print(X)
-                output = model(X)
-                if e%10 ==0:
-                    print(X[0])
-                    print(output[0])
+    # df = pd.read_csv("dataset/test_processed.csv")
+    # ds = Cdataset(df, train=False)
+    # test_model = SimpleNet(ds.__shape__()[1], hidden_size, output_size)
+    # print(model.state_dict())
+    # test_model.load_state_dict(model.state_dict()) # Need to be either resized or flushed in order to fit the test data
+    # test_model.to(device)
+    # test_loader = DataLoader(ds, batch_size=batch_size, shuffle=False)
+    # for e in range(n_epoch):
+    #     for X in test_loader:
+    #         model.eval()
+    #         with torch.no_grad():
+    #             X = X.to(device)
+    #             print(X)
+    #             output = model(X)
+    #             if e%10 ==0:
+    #                 print(X[0])
+    #                 print(output[0])
 
 
 
