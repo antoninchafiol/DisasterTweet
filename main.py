@@ -118,6 +118,7 @@ class Cdataset():
         df = pd.read_csv("dataset/merged_data.csv")
         vocab = CountVectorizer()
         vocab.fit_transform(df['text'])
+        self.vocab = vocab
 
         df = df.loc[df["target"].isnull() == train]
         vec = vocab.transform(df['text'])
@@ -147,28 +148,13 @@ if __name__ == '__main__':
     # print(test_data.__getitem__(0))
 
 
-    # batch_size=128
-    # n_epoch = 10
-    # input_len = 11501 # Taken from dict size 
-    # hidden_size = 3
-    # output_size = 1
-    # lr = 0.01
-    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
- 
-    # split = 7613/10876
-    train_df = pd.read_csv("dataset/train_processed.csv")
-    test_df = pd.read_csv("dataset/test_processed.csv")
-    merge_df = pd.read_csv("dataset/merged_data.csv")
-    vec1 = CountVectorizer()
-    vec2 = CountVectorizer()
-    vec3 = CountVectorizer()
-    train_vec = vec1.fit_transform(train_df['text'])
-    test_vec = vec2.fit_transform(test_df['text'])
-    merge_vec = vec3.fit_transform(merge_df['text'])
-    # merge_vec = hstack([vec1, vec2], 'csr')
-    print(len(vec1.vocabulary_))
-    print(len(vec2.vocabulary_))
-    print(len(vec3.vocabulary_))
+    batch_size=128
+    n_epoch = 10
+    input_len = 11501 # Taken from dict size 
+    hidden_size = 3
+    output_size = 1
+    lr = 0.01
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     # train_data = Cdataset(train_df, train=True)
     # test_data = Cdataset(test_df, train=False)
