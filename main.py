@@ -108,14 +108,21 @@ def vectorization(df):
     return vectorized_textc, vectorized_keywordc
 
 class Cdataset():
-    def __init__(self, df):
+    def __init__(self, df, train=False):
+        self.train = train
         X_train, _ = vectorization(df)
         self.X = torch.from_numpy(X_train.todense()).float()
-        self.Y = torch.from_numpy(np.array(df['target'])).float()
+        if train==True:
+            self.Y = torch.from_numpy(np.array(df['target'])).float()
     def __len__(self):
-        return self.Y.size()[0]
+        return self.X.size()[0]
     def __getitem__(self, index):
-        return self.X[index], self.Y[index]
+        res = self.X[index]
+        if self.train==True:
+            res = self.X[index], self.Y[index]
+        return res
+    def __shape__(self):
+        return self.X.size()
 
 if __name__ == '__main__':
 
@@ -124,27 +131,25 @@ if __name__ == '__main__':
     # this should give some better results 
     # (as for ex #earthquake might be good to keep)
 
-    df = pd.read_csv("dataset/test.csv")
-    df = cleaningProcessing(df)
-    df.to_csv('dataset/test_processed.csv')
-    # batch_size=128
-    # n_epoch = 100
-    # input_len = 11501 # Taken from dict size 
-    # hidden_size = 3
-    # output_size = 1
-    # lr = 0.01
-    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    batch_size=128
+    n_epoch = 10
+    input_len = 11501 # Taken from dict size 
+    hidden_size = 3
+    output_size = 1
+    lr = 0.01
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    # df = pd.read_csv("dataset/train_processed.csv")
-    # ds = Cdataset(df)
-    # train_loader = DataLoader(ds, batch_size=batch_size, shuffle=True)
+    df = pd.read_csv("dataset/train_processed.csv")
+    ds = Cdataset(df, train=True)
+    train_loader = DataLoader(ds, batch_size=batch_size, shuffle=True)
 
-    # model = SimpleNet(input_len, hidden_size, output_size)
-    # model.to(device)
-    # optimizer = torch.optim.SGD(model.parameters(), lr=lr)
-    # loss_fn = torch.nn.CrossEntropyLoss()
-    # f1 = F1Score(task='binary').to(device)
+    model = SimpleNet(input_len, hidden_size, output_size)
+    model.to(device)
+    optimizer = torch.optim.SGD(model.parameters(), lr=lr)
+    loss_fn = torch.nn.CrossEntropyLoss()
+    f1 = F1Score(task='binary').to(device)
 
+    # Training step
     # lacc = []
     # lloss = []
     # for e in range(n_epoch):
@@ -176,8 +181,26 @@ if __name__ == '__main__':
     #     lloss.append(e_loss/train_loader.__len__())
     #     if e%10==0:
     #         print('After {} epoch training loss is {}, Train F1 is {} - Eval F1: {}'.format(e,loss.item(), train_acc, eval_acc))
-    # # df.to_csv("dataset/train_processed.csv")
 
-    # # Test data
-    # test_loader = DataLoader(ds, batch_size=batch_size, shuffle=True)
+    # Test data
+    df = pd.read_csv("dataset/test_processed.csv")
+    ds = Cdataset(df, train=False)
+    test_model = SimpleNet(ds.__shape__()[1], hidden_size, output_size)
+    print(model.state_dict())
+    test_model.load_state_dict(model.state_dict()) # Need to be either resized or flushed in order to fit the test data
+    test_model.to(device)
+    test_loader = DataLoader(ds, batch_size=batch_size, shuffle=False)
+    for e in range(n_epoch):
+        for X in test_loader:
+            model.eval()
+            with torch.no_grad():
+                X = X.to(device)
+                print(X)
+                output = model(X)
+                if e%10 ==0:
+                    print(X[0])
+                    print(output[0])
+
+
+
 
