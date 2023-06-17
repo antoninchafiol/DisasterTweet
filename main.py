@@ -124,52 +124,60 @@ if __name__ == '__main__':
     # this should give some better results 
     # (as for ex #earthquake might be good to keep)
 
-    batch_size=128
-    n_epoch = 500
-    input_len = 11501 # Taken from dict size 
-    hidden_size = 3
-    output_size = 1
-    lr = 0.01
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    df = pd.read_csv("dataset/test.csv")
+    df = cleaningProcessing(df)
+    df.to_csv('dataset/test_processed.csv')
+    # batch_size=128
+    # n_epoch = 100
+    # input_len = 11501 # Taken from dict size 
+    # hidden_size = 3
+    # output_size = 1
+    # lr = 0.01
+    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    df = pd.read_csv("dataset/train_processed.csv")
-    ds = Cdataset(df)
-    train_loader = DataLoader(ds, batch_size=batch_size, shuffle=True)
+    # df = pd.read_csv("dataset/train_processed.csv")
+    # ds = Cdataset(df)
+    # train_loader = DataLoader(ds, batch_size=batch_size, shuffle=True)
 
-    model = SimpleNet(input_len, hidden_size, output_size)
-    model.to(device)
-    optimizer = torch.optim.SGD(model.parameters(), lr=lr)
-    loss_fn = torch.nn.CrossEntropyLoss()
-    f1 = F1Score(task='binary').to(device)
+    # model = SimpleNet(input_len, hidden_size, output_size)
+    # model.to(device)
+    # optimizer = torch.optim.SGD(model.parameters(), lr=lr)
+    # loss_fn = torch.nn.CrossEntropyLoss()
+    # f1 = F1Score(task='binary').to(device)
 
-    lacc = []
-    lloss = []
-    for e in range(n_epoch):
-        e_acc = 0
-        e_loss = 0
-        for X, Y in train_loader:
-            X = X.to(device)
-            Y = Y.to(device)
-            optimizer.zero_grad()
+    # lacc = []
+    # lloss = []
+    # for e in range(n_epoch):
+    #     e_acc = 0
+    #     e_loss = 0
+    #     for X, Y in train_loader:
+    #         X = X.to(device)
+    #         Y = Y.to(device)
+    #         optimizer.zero_grad()
 
-            model.train()
-            with torch.set_grad_enabled(True):
-                y_hat = model(X)
-                loss = loss_fn(y_hat, Y)
-                loss.backward()
-                optimizer.step()
+    #         model.train()
+    #         train_acc = 0
+    #         with torch.set_grad_enabled(True):
+    #             y_hat = model(X)
+    #             loss = loss_fn(y_hat, Y)
+    #             loss.backward()
+    #             optimizer.step()
+    #             train_acc = f1(y_hat, Y)
 
+    #         model.eval()
+    #         eval_acc = 0
+    #         with torch.set_grad_enabled(False):
+    #             y_hat = model(X)
+    #             loss = loss_fn(y_hat, Y)
+    #             e_acc  += loss.item() 
+    #             e_loss += f1(y_hat, Y)
+    #             eval_acc = f1(y_hat, Y)
+    #     lacc.append(e_acc/train_loader.__len__())
+    #     lloss.append(e_loss/train_loader.__len__())
+    #     if e%10==0:
+    #         print('After {} epoch training loss is {}, Train F1 is {} - Eval F1: {}'.format(e,loss.item(), train_acc, eval_acc))
+    # # df.to_csv("dataset/train_processed.csv")
 
-            model.eval()
-            with torch.set_grad_enabled(False):
-                y_hat = model(X)
-                loss = loss_fn(y_hat, Y)
-                e_acc  += loss.item() 
-                e_loss += f1(y_hat, Y)
-        lacc.append(e_acc/train_loader.__len__())
-        lloss.append(e_loss/train_loader.__len__())
-        if e%10==0:
-            print('After {} epoch training loss is {}, F1 is {}'.format(e,loss.item(), lacc[-1]))
-    # df.to_csv("dataset/train_processed.csv")
-
+    # # Test data
+    # test_loader = DataLoader(ds, batch_size=batch_size, shuffle=True)
 
