@@ -5,11 +5,13 @@ from torch.utils.data import Dataset, DataLoader
 from torchmetrics import F1Score
 import pandas as pd
 import numpy as np
+import math
 import seaborn as sns
 
 import matplotlib.pyplot as plt
 
 from sklearn.feature_extraction.text import TfidfVectorizer,CountVectorizer
+from scipy.sparse import hstack, csr_matrix
 from torchtext.vocab import GloVe
 from torch.utils.data import Dataset
 from nltk import word_tokenize
@@ -103,16 +105,23 @@ def vectorization(df):
     vectorizer = CountVectorizer()
     vectorized_textc = vectorizer.fit_transform(df['text'])
     vectorized_keywordc = vectorizer.fit_transform(df['keyword'])
+    print(vectorizer.vocabulary_)
     # Tfid
     # GloVe
     # word2Vec
     return vectorized_textc, vectorized_keywordc
 
 class Cdataset():
-    def __init__(self, df, train=False):
+    def __init__(self, train=False):
         self.train = train
-        X, _ = vectorization(df)
-        self.X = torch.from_numpy(X.todense()).float()
+
+        df = pd.read_csv("dataset/merged_data.csv")
+        vocab = CountVectorizer()
+        vocab.fit_transform(df['text'])
+
+        df = df.loc[df["target"].isnull() == train]
+        vec = vocab.transform(df['text'])
+        self.X = torch.from_numpy(vec.todense()).float()
         if train==True:
             self.Y = torch.from_numpy(np.array(df['target'])).float()
     def __len__(self):
@@ -127,16 +136,16 @@ class Cdataset():
 
 if __name__ == '__main__':
 
-
-    df = pd.read_csv("dataset/merged_data.csv")
-    df = df.drop(['Unnamed: 0.1', 'Unnamed: 0', 'id'], axis=1)
-    df.to_csv("dataset/merged_data.csv")
-    print(df)
-    # df = df.drop()
     # Note for later:\
     # Need to check if by processing the hashtags differently, 
     # this should give some better results 
     # (as for ex #earthquake might be good to keep)
+
+    # train_data = Cdataset(train=True)
+    # test_data = Cdataset(train=False)
+    # print(train_data.__getitem__(0))
+    # print(test_data.__getitem__(0))
+
 
     # batch_size=128
     # n_epoch = 10
@@ -147,12 +156,24 @@ if __name__ == '__main__':
     # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
  
     # split = 7613/10876
-    # df = pd.read_csv("dataset/merged_data.csv")
-    # ds = Cdataset(df, train=True)
-    # train, test =  torch.utils.data.random_split(ds, [split, 1-split], generator=torch.Generator().manual_seed(42))
-    # train_loader = DataLoader(ds, batch_size=batch_size, shuffle=True)
-    # test_loader = DataLoader(ds, batch_size=batch_size, shuffle=True)
-    # input_len = ds.__shape__()[1]
+    train_df = pd.read_csv("dataset/train_processed.csv")
+    test_df = pd.read_csv("dataset/test_processed.csv")
+    merge_df = pd.read_csv("dataset/merged_data.csv")
+    vec1 = CountVectorizer()
+    vec2 = CountVectorizer()
+    vec3 = CountVectorizer()
+    train_vec = vec1.fit_transform(train_df['text'])
+    test_vec = vec2.fit_transform(test_df['text'])
+    merge_vec = vec3.fit_transform(merge_df['text'])
+    # merge_vec = hstack([vec1, vec2], 'csr')
+    print(len(vec1.vocabulary_))
+    print(len(vec2.vocabulary_))
+    print(len(vec3.vocabulary_))
+
+    # train_data = Cdataset(train_df, train=True)
+    # test_data = Cdataset(test_df, train=False)
+    # train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
+    # test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False)
 
     # model = SimpleNet(input_len, hidden_size, output_size)
     # model.to(device)
@@ -160,7 +181,7 @@ if __name__ == '__main__':
     # loss_fn = torch.nn.CrossEntropyLoss()
     # f1 = F1Score(task='binary').to(device)
 
-    # Training step
+    # # Training step
     # lacc = []
     # lloss = []
     # for e in range(n_epoch):
