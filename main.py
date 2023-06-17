@@ -5,6 +5,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchmetrics import F1Score
 import pandas as pd
 import numpy as np
+import seaborn as sns
 
 import matplotlib.pyplot as plt
 
@@ -110,8 +111,8 @@ def vectorization(df):
 class Cdataset():
     def __init__(self, df, train=False):
         self.train = train
-        X_train, _ = vectorization(df)
-        self.X = torch.from_numpy(X_train.todense()).float()
+        X, _ = vectorization(df)
+        self.X = torch.from_numpy(X.todense()).float()
         if train==True:
             self.Y = torch.from_numpy(np.array(df['target'])).float()
     def __len__(self):
@@ -126,26 +127,32 @@ class Cdataset():
 
 if __name__ == '__main__':
 
+
+    df = pd.read_csv("dataset/merged_data.csv")
+    df = df.drop(['Unnamed: 0.1', 'Unnamed: 0', 'id'], axis=1)
+    df.to_csv("dataset/merged_data.csv")
+    print(df)
+    # df = df.drop()
     # Note for later:\
     # Need to check if by processing the hashtags differently, 
     # this should give some better results 
     # (as for ex #earthquake might be good to keep)
 
-    batch_size=128
-    n_epoch = 10
-    input_len = 11501 # Taken from dict size 
-    hidden_size = 3
-    output_size = 1
-    lr = 0.01
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    df_train = pd.read_csv("dataset/train_processed.csv")
-    df_test = pd.read_csv("dataset/test_processed.csv")
-    df_merged = pd.concat([df_train, df_test])
-    df_merged.to_csv('dataset/merged_data.csv')
-    print(df_merged)
-    # df = pd.read_csv("dataset/train_processed.csv")
+    # batch_size=128
+    # n_epoch = 10
+    # input_len = 11501 # Taken from dict size 
+    # hidden_size = 3
+    # output_size = 1
+    # lr = 0.01
+    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+ 
+    # split = 7613/10876
+    # df = pd.read_csv("dataset/merged_data.csv")
     # ds = Cdataset(df, train=True)
+    # train, test =  torch.utils.data.random_split(ds, [split, 1-split], generator=torch.Generator().manual_seed(42))
     # train_loader = DataLoader(ds, batch_size=batch_size, shuffle=True)
+    # test_loader = DataLoader(ds, batch_size=batch_size, shuffle=True)
+    # input_len = ds.__shape__()[1]
 
     # model = SimpleNet(input_len, hidden_size, output_size)
     # model.to(device)
