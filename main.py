@@ -120,7 +120,7 @@ class Cdataset():
     def __init__(self, df, vocab, train=False):
         self.train = train
         self.vocab = vocab
-        self.text = df['text']
+        self.text = df['text'].to_numpy()
         vec = vocab.transform(df['text'])
         self.X = torch.from_numpy(vec.todense()).float()
         if train==True:
@@ -152,11 +152,12 @@ if __name__ == '__main__':
     test_raw_text_df = pd.read_csv("dataset/test_processed.csv")
     vocab = getVocab()
     train_data = Cdataset(train_raw_text_df, vocab, train=True)
+    train_data, dev_data = torch.utils.data.random_split(train_data, [0.6, 0.4])
     test_data = Cdataset(test_raw_text_df, vocab, train=False)
 
     batch_size=128
     n_epoch = 10
-    input_len = train_data.__shape__()[1] # Taken from dict size 
+    input_len = len(vocab.vocabulary_) # Taken from dict size 
     hidden_size = 3
     output_size = 1
     lr = 0.01
@@ -164,8 +165,9 @@ if __name__ == '__main__':
 
 
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
+    dev_loader = DataLoader(dev_data, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False)
-
+    
     model = SimpleNet(input_len, hidden_size, output_size)
     model.to(device)
     optimizer = torch.optim.RMSprop(model.parameters(), lr=lr)
