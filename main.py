@@ -112,25 +112,27 @@ def vectorization(df):
     return vectorized_textc, vectorized_keywordc
 
 class Cdataset():
-    def __init__(self, train=False):
+    def __init__(self, df, train=False):
         self.train = train
+        self.text = df['text'].to_numpy()
 
         df = pd.read_csv("dataset/merged_data.csv")
         vocab = CountVectorizer()
         vocab.fit_transform(df['text'])
         self.vocab = vocab
 
-        df = df.loc[df["target"].isnull() == train]
+        df = df.loc[df["target"].isnull() != train]
         vec = vocab.transform(df['text'])
         self.X = torch.from_numpy(vec.todense()).float()
+        
         if train==True:
             self.Y = torch.from_numpy(np.array(df['target'])).float()
     def __len__(self):
         return self.X.size()[0]
     def __getitem__(self, index):
-        res = self.X[index]
+        res = self.X[index], self.text[index]
         if self.train==True:
-            res = self.X[index], self.Y[index]
+            res = self.X[index], self.Y[index], self.text[index]
         return res
     def __shape__(self):
         return self.X.size()
@@ -148,76 +150,76 @@ if __name__ == '__main__':
     # print(test_data.__getitem__(0))
 
 
+    train_raw_text_df = pd.read_csv("dataset/train_processed.csv")
+    test_raw_text_df = pd.read_csv("dataset/test_processed.csv")
+    train_data = Cdataset(train_raw_text_df, train=True)
+    test_data = Cdataset(test_raw_text_df, train=False)
+
     batch_size=128
     n_epoch = 10
-    input_len = 11501 # Taken from dict size 
+    input_len = train_data.__shape__()[1] # Taken from dict size 
     hidden_size = 3
     output_size = 1
     lr = 0.01
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    # train_data = Cdataset(train_df, train=True)
-    # test_data = Cdataset(test_df, train=False)
-    # train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
-    # test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False)
 
-    # model = SimpleNet(input_len, hidden_size, output_size)
-    # model.to(device)
-    # optimizer = torch.optim.SGD(model.parameters(), lr=lr)
-    # loss_fn = torch.nn.CrossEntropyLoss()
-    # f1 = F1Score(task='binary').to(device)
+    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False)
 
-    # # Training step
-    # lacc = []
-    # lloss = []
-    # for e in range(n_epoch):
-    #     e_acc = 0
-    #     e_loss = 0
-    #     for X, Y in train_loader:
-    #         X = X.to(device)
-    #         Y = Y.to(device)
-    #         optimizer.zero_grad()
+    model = SimpleNet(input_len, hidden_size, output_size)
+    model.to(device)
+    optimizer = torch.optim.RMSprop(model.parameters(), lr=lr)
+    loss_fn = torch.nn.CrossEntropyLoss()
+    f1 = F1Score(task='binary').to(device)
 
-    #         model.train()
-    #         train_acc = 0
-    #         with torch.set_grad_enabled(True):
-    #             y_hat = model(X)
-    #             loss = loss_fn(y_hat, Y)
-    #             loss.backward()
-    #             optimizer.step()
-    #             train_acc = f1(y_hat, Y)
+    # Training step
+    lacc = []
+    lloss = []
+    for e in range(n_epoch):
+        e_acc = 0
+        e_loss = 0
+        for X, Y, _ in train_loader:
+            X = X.to(device)
+            Y = Y.to(device)
+            optimizer.zero_grad()
 
-    #         model.eval()
-    #         eval_acc = 0
-    #         with torch.set_grad_enabled(False):
-    #             y_hat = model(X)
-    #             loss = loss_fn(y_hat, Y)
-    #             e_acc  += loss.item() 
-    #             e_loss += f1(y_hat, Y)
-    #             eval_acc = f1(y_hat, Y)
-    #     lacc.append(e_acc/train_loader.__len__())
-    #     lloss.append(e_loss/train_loader.__len__())
-    #     if e%10==0:
-    #         print('After {} epoch training loss is {}, Train F1 is {} - Eval F1: {}'.format(e,loss.item(), train_acc, eval_acc))
+            model.train()
+            train_acc = 0
+            with torch.set_grad_enabled(True):
+                y_hat = model(X)
+                loss = loss_fn(y_hat, Y)
+                loss.backward()
+                optimizer.step()
+                train_acc = f1(y_hat, Y)
+
+            model.eval()
+            eval_acc = 0
+            with torch.set_grad_enabled(False):
+                y_hat = model(X)
+                loss = loss_fn(y_hat, Y)
+                e_acc  += loss.item() 
+                e_loss += f1(y_hat, Y)
+                eval_acc = f1(y_hat, Y)
+        lacc.append(e_acc/train_loader.__len__())
+        lloss.append(e_loss/train_loader.__len__())
+        if e%10==0:
+            print('After {} epoch training loss is {}, Train F1 is {} - Eval F1: {}'.format(e,loss.item(), train_acc, eval_acc))
 
     # Test data
-    # df = pd.read_csv("dataset/test_processed.csv")
-    # ds = Cdataset(df, train=False)
-    # test_model = SimpleNet(ds.__shape__()[1], hidden_size, output_size)
-    # print(model.state_dict())
-    # test_model.load_state_dict(model.state_dict()) # Need to be either resized or flushed in order to fit the test data
-    # test_model.to(device)
-    # test_loader = DataLoader(ds, batch_size=batch_size, shuffle=False)
-    # for e in range(n_epoch):
-    #     for X in test_loader:
-    #         model.eval()
-    #         with torch.no_grad():
-    #             X = X.to(device)
-    #             print(X)
-    #             output = model(X)
-    #             if e%10 ==0:
-    #                 print(X[0])
-    #                 print(output[0])
+    
+    test_model = SimpleNet(input_len, hidden_size, output_size)
+    test_model.load_state_dict(model.state_dict()) 
+    test_model.to(device)
+    for e in range(n_epoch):
+        for X, _ in test_loader:
+            model.eval()
+            with torch.no_grad():
+                X = X.to(device)
+                output = model(X)
+                if e%10 ==0:
+                    print(_[0])
+                    print(output[0])
 
 
 
