@@ -111,20 +111,18 @@ def vectorization(df):
     # word2Vec
     return vectorized_textc, vectorized_keywordc
 
+def getVocab(df=pd.read_csv("dataset/merged_data.csv")):
+    vocab = CountVectorizer()
+    vocab.fit_transform(df['text'])
+    return vocab
+
 class Cdataset():
-    def __init__(self, df, train=False):
+    def __init__(self, df, vocab, train=False):
         self.train = train
-        self.text = df['text'].to_numpy()
-
-        df = pd.read_csv("dataset/merged_data.csv")
-        vocab = CountVectorizer()
-        vocab.fit_transform(df['text'])
         self.vocab = vocab
-
-        df = df.loc[df["target"].isnull() != train]
+        self.text = df['text']
         vec = vocab.transform(df['text'])
         self.X = torch.from_numpy(vec.todense()).float()
-        
         if train==True:
             self.Y = torch.from_numpy(np.array(df['target'])).float()
     def __len__(self):
@@ -152,8 +150,9 @@ if __name__ == '__main__':
 
     train_raw_text_df = pd.read_csv("dataset/train_processed.csv")
     test_raw_text_df = pd.read_csv("dataset/test_processed.csv")
-    train_data = Cdataset(train_raw_text_df, train=True)
-    test_data = Cdataset(test_raw_text_df, train=False)
+    vocab = getVocab()
+    train_data = Cdataset(train_raw_text_df, vocab, train=True)
+    test_data = Cdataset(test_raw_text_df, vocab, train=False)
 
     batch_size=128
     n_epoch = 10
@@ -201,6 +200,12 @@ if __name__ == '__main__':
                 e_acc  += loss.item() 
                 e_loss += f1(y_hat, Y)
                 eval_acc = f1(y_hat, Y)
+
+
+        # for X, Y, _ in dev_loader:
+        #     # Add Dev part
+
+
         lacc.append(e_acc/train_loader.__len__())
         lloss.append(e_loss/train_loader.__len__())
         if e%10==0:
