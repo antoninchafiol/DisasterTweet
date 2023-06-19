@@ -156,7 +156,7 @@ if __name__ == '__main__':
     test_data = Cdataset(test_raw_text_df, vocab, train=False)
 
     batch_size=128
-    n_epoch = 10
+    n_epoch = 100
     input_len = len(vocab.vocabulary_) # Taken from dict size 
     hidden_size = 3
     output_size = 1
@@ -175,8 +175,10 @@ if __name__ == '__main__':
     f1 = F1Score(task='binary').to(device)
 
     # Training step
-    lacc = []
-    lloss = []
+    t_acc = []
+    d_acc = []
+    t_loss = []
+    d_loss = []
     for e in range(n_epoch):
         train_acc = 0
         train_loss = 0
@@ -208,16 +210,24 @@ if __name__ == '__main__':
                 eval_acc  += f1(y_hat, Y)
                 eval_loss += loss.item()
 
-        epoch_acc = (train_acc/len(train_loader), eval_acc/len(dev_loader))
-        epoch_loss= (train_loss/len(train_loader), eval_loss/len(dev_loader))
-        lacc.append(epoch_acc)
-        lloss.append(epoch_loss)
+        train_acc, eval_acc = train_acc/len(train_loader), eval_acc/len(dev_loader)
+        train_loss, eval_loss= train_loss/len(train_loader), eval_loss/len(dev_loader)
+        t_acc.append(train_acc)
+        d_acc.append(eval_acc)
+        t_loss.append(train_loss)
+        d_loss.append(eval_loss)
         if e%10==0:
-            print('After {} epoch,  Train/Dev Loss: {} / {} -- Train/Dev F1: {} / {}'.format(e,epoch_loss[0], epoch_loss[1], epoch_acc[0], epoch_acc[1]))
+            print('After {} epoch,  Train/Dev Loss: {} / {} -- Train/Dev F1: {} / {}'.format(e,  train_loss, eval_loss, train_acc, train_loss))
 
     # Display some graphs
-
-    plt.figure
+    fig, (ax1, ax2) = plt.subplots(2, 1)
+    ax1.plot([i for i in range(n_epoch)], t_acc, color='green', label='Train')
+    ax1.plot([i for i in range(n_epoch)], d_acc, color='red', label='Dev')
+    ax1.set_ylabel('Accuracy')
+    ax2.plot([i for i in range(n_epoch)], t_loss, color='green', label='Train')
+    ax2.plot([i for i in range(n_epoch)], d_loss, color='red', label='Dev')
+    ax2.set_ylabel('Loss')
+    plt.show()
     # Test data
     test_model = SimpleNet(input_len, hidden_size, output_size)
     test_model.load_state_dict(model.state_dict()) 
