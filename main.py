@@ -178,43 +178,46 @@ if __name__ == '__main__':
     lacc = []
     lloss = []
     for e in range(n_epoch):
-        e_acc = 0
-        e_loss = 0
+        train_acc = 0
+        train_loss = 0
         for X, Y, _ in train_loader:
             X = X.to(device)
             Y = Y.to(device)
-            optimizer.zero_grad()
 
+            optimizer.zero_grad()
             model.train()
-            train_acc = 0
             with torch.set_grad_enabled(True):
                 y_hat = model(X)
                 loss = loss_fn(y_hat, Y)
                 loss.backward()
                 optimizer.step()
-                train_acc = f1(y_hat, Y)
+                train_acc += f1(y_hat, Y)
+                train_loss += loss.item()
 
             model.eval()
-            eval_acc = 0
+            
+
+        eval_acc = 0
+        eval_loss = 0
+        for X, Y, _ in dev_loader:
+            X = X.to(device)
+            Y = Y.to(device)
+            # Add Dev part
             with torch.set_grad_enabled(False):
                 y_hat = model(X)
                 loss = loss_fn(y_hat, Y)
-                e_acc  += loss.item() 
-                e_loss += f1(y_hat, Y)
-                eval_acc = f1(y_hat, Y)
+                eval_acc  += f1(y_hat, Y)
+                eval_loss += loss.item()
 
-
-        # for X, Y, _ in dev_loader:
-        #     # Add Dev part
-
-
-        lacc.append(e_acc/train_loader.__len__())
-        lloss.append(e_loss/train_loader.__len__())
+        epoch_acc = (train_acc/len(train_loader), eval_acc/len(dev_loader))
+        epoch_loss= (train_loss/len(train_loader), eval_loss/len(dev_loader))
+        lacc.append(epoch_acc)
+        lloss.append(epoch_loss)
         if e%10==0:
-            print('After {} epoch training loss is {}, Train F1 is {} - Eval F1: {}'.format(e,loss.item(), train_acc, eval_acc))
+            print('After {} epoch,  Train/Dev Loss: {} / {} -- Train/Dev F1: {} / {}'.format(e,epoch_loss[0], epoch_loss[1], epoch_acc[0], epoch_acc[1]))
+
 
     # Test data
-    
     test_model = SimpleNet(input_len, hidden_size, output_size)
     test_model.load_state_dict(model.state_dict()) 
     test_model.to(device)
@@ -224,9 +227,6 @@ if __name__ == '__main__':
             with torch.no_grad():
                 X = X.to(device)
                 output = model(X)
-                if e%10 ==0:
-                    print(_[0])
-                    print(output[0])
 
 
 
