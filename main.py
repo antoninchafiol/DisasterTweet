@@ -193,13 +193,12 @@ if __name__ == '__main__':
                 optimizer.step()
                 train_acc += f1(y_hat, Y)
                 train_loss += loss.item()
-
-            model.eval()
             
 
         eval_acc = 0
         eval_loss = 0
         for X, Y, _ in dev_loader:
+            model.eval()
             X = X.to(device)
             Y = Y.to(device)
             # Add Dev part
@@ -216,7 +215,9 @@ if __name__ == '__main__':
         if e%10==0:
             print('After {} epoch,  Train/Dev Loss: {} / {} -- Train/Dev F1: {} / {}'.format(e,epoch_loss[0], epoch_loss[1], epoch_acc[0], epoch_acc[1]))
 
+    # Display some graphs
 
+    plt.figure
     # Test data
     test_model = SimpleNet(input_len, hidden_size, output_size)
     test_model.load_state_dict(model.state_dict()) 
