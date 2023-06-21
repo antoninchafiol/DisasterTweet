@@ -121,6 +121,7 @@ class Cdataset():
         self.train = train
         self.vocab = vocab
         self.text = df['text'].astype(str).values.tolist()
+
         # self.seq_length = np.zeros((self.text.shape))
         print(self.text[0])
         for i in range(self.text.shape[0]):
@@ -156,26 +157,29 @@ if __name__ == '__main__':
 
     train_raw_text_df = pd.read_csv("dataset/train_processed.csv")
     test_raw_text_df = pd.read_csv("dataset/test_processed.csv")
-    vocab = getVocab()
-    train_data = Cdataset(train_raw_text_df, vocab, train=True)
-    train_data, dev_data = torch.utils.data.random_split(train_data, [0.6, 0.4])
-    test_data = Cdataset(test_raw_text_df, vocab, train=False)
+    df = pd.read_csv("dataset/train.csv")
+    
+    print(re.sub(r'\'|\[|\]|\s', '', train_raw_text_df['text'][0]).split(','))
+    # vocab = getVocab()
+    # train_data = Cdataset(train_raw_text_df, vocab, train=True)
+    # train_data, dev_data = torch.utils.data.random_split(train_data, [0.6, 0.4])
+    # test_data = Cdataset(test_raw_text_df, vocab, train=False)
 
-    batch_size=128
-    n_epoch = 10
-    input_len = len(vocab.vocabulary_) # Taken from dict size 
-    hidden_size = 3
-    output_size = 1
-    lr = 0.01
-    dropout = 0.25
-    num_layers = 1
-    bidirectional = 1
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    # batch_size=128
+    # n_epoch = 10
+    # input_len = len(vocab.vocabulary_) # Taken from dict size 
+    # hidden_size = 3
+    # output_size = 1
+    # lr = 0.01
+    # dropout = 0.25
+    # num_layers = 1
+    # bidirectional = 1
+    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
-    dev_loader = DataLoader(dev_data, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False)
+    # train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
+    # dev_loader = DataLoader(dev_data, batch_size=batch_size, shuffle=True)
+    # test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False)
     
     # model = SimpleLSTM(input_len, hidden_size, output_size, num_layers, bidirectional, dropout, device)
     # model.to(device)
