@@ -120,8 +120,14 @@ class Cdataset():
     def __init__(self, df, vocab, train=False):
         self.train = train
         self.vocab = vocab
-        self.text = df['text'].to_numpy()
+        self.text = df['text'].astype(str).values.tolist()
+        # self.seq_length = np.zeros((self.text.shape))
+        print(self.text[0])
+        for i in range(self.text.shape[0]):
+            self.seq_length[i] = len(self.text[i])
+        print(self.seq_length[0])
         vec = vocab.transform(df['text'])
+        print(vec.todense().shape)
         self.X = torch.from_numpy(vec.todense()).float()
         if train==True:
             self.Y = torch.from_numpy(np.array(df['target'])).float()
@@ -156,11 +162,14 @@ if __name__ == '__main__':
     test_data = Cdataset(test_raw_text_df, vocab, train=False)
 
     batch_size=128
-    n_epoch = 100
+    n_epoch = 10
     input_len = len(vocab.vocabulary_) # Taken from dict size 
     hidden_size = 3
     output_size = 1
     lr = 0.01
+    dropout = 0.25
+    num_layers = 1
+    bidirectional = 1
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
@@ -168,76 +177,79 @@ if __name__ == '__main__':
     dev_loader = DataLoader(dev_data, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False)
     
-    model = SimpleNet(input_len, hidden_size, output_size)
-    model.to(device)
-    optimizer = torch.optim.RMSprop(model.parameters(), lr=lr)
-    loss_fn = torch.nn.CrossEntropyLoss()
-    f1 = F1Score(task='binary').to(device)
+    # model = SimpleLSTM(input_len, hidden_size, output_size, num_layers, bidirectional, dropout, device)
+    # model.to(device)
+    
+    # optimizer = torch.optim.RMSprop(model.parameters(), lr=lr)
+    # loss_fn = torch.nn.CrossEntropyLoss()
+    # f1 = F1Score(task='binary').to(device)
 
     # Training step
-    t_acc = []
-    d_acc = []
-    t_loss = []
-    d_loss = []
-    for e in range(n_epoch):
-        train_acc = 0
-        train_loss = 0
-        for X, Y, _ in train_loader:
-            X = X.to(device)
-            Y = Y.to(device)
-
-            optimizer.zero_grad()
-            model.train()
-            with torch.set_grad_enabled(True):
-                y_hat = model(X)
-                loss = loss_fn(y_hat, Y)
-                loss.backward()
-                optimizer.step()
-                train_acc += f1(y_hat, Y)
-                train_loss += loss.item()
+    # t_acc = []
+    # d_acc = []
+    # t_loss = []
+    # d_loss = []
+    # for e in range(n_epoch):
+    #     train_acc = 0
+    #     train_loss = 0
+    #     for X, Y, _ in train_loader:
+    #         X = X.to(device)
+    #         Y = Y.to(device)
+    #         print(X.size())
+    #         print(train_data.__shape__())
+    #         # X = torch.reshape(X, (X.size(0), 1, X.size(1)))
+    #         optimizer.zero_grad()
+    #         model.train()
+    #         with torch.set_grad_enabled(True):
+    #             y_hat = model(X)
+    #             loss = loss_fn(y_hat, Y)
+    #             loss.backward()
+    #             optimizer.step()
+    #             train_acc += f1(y_hat, Y)
+    #             train_loss += loss.item()
             
 
-        eval_acc = 0
-        eval_loss = 0
-        for X, Y, _ in dev_loader:
-            model.eval()
-            X = X.to(device)
-            Y = Y.to(device)
-            # Add Dev part
-            with torch.set_grad_enabled(False):
-                y_hat = model(X)
-                loss = loss_fn(y_hat, Y)
-                eval_acc  += f1(y_hat, Y)
-                eval_loss += loss.item()
+        # eval_acc = 0
+        # eval_loss = 0
+        # for X, Y, _ in dev_loader:
+        #     model.eval()
+        #     X = X.to(device)
+        #     Y = Y.to(device)
+        #     # Add Dev part
+        #     with torch.set_grad_enabled(False):
+        #         y_hat = model(X)
+        #         loss = loss_fn(y_hat, Y)
+        #         eval_acc  += f1(y_hat, Y)
+        #         eval_loss += loss.item()
 
-        train_acc, eval_acc = train_acc/len(train_loader), eval_acc/len(dev_loader)
-        train_loss, eval_loss= train_loss/len(train_loader), eval_loss/len(dev_loader)
-        t_acc.append(train_acc)
-        d_acc.append(eval_acc)
-        t_loss.append(train_loss)
-        d_loss.append(eval_loss)
-        if e%10==0:
-            print('After {} epoch,  Train/Dev Loss: {} / {} -- Train/Dev F1: {} / {}'.format(e,  train_loss, eval_loss, train_acc, train_loss))
+        # train_acc, eval_acc = train_acc/len(train_loader), eval_acc/len(dev_loader)
+        # train_loss, eval_loss= train_loss/len(train_loader), eval_loss/len(dev_loader)
+        # t_acc.append(train_acc)
+        # d_acc.append(eval_acc)
+        # t_loss.append(train_loss)
+        # d_loss.append(eval_loss)
+        # if e%10==0:
+        #     print('After {} epoch,  Train/Dev Loss: {} / {} -- Train/Dev F1: {} / {}'.format(e,  train_loss, eval_loss, train_acc, train_loss))
 
     # Display some graphs
-    fig, (ax1, ax2) = plt.subplots(2, 1)
-    ax1.plot([i for i in range(n_epoch)], t_acc, color='green', label='Train')
-    ax1.plot([i for i in range(n_epoch)], d_acc, color='red', label='Dev')
-    ax1.set_ylabel('Accuracy')
-    ax2.plot([i for i in range(n_epoch)], t_loss, color='green', label='Train')
-    ax2.plot([i for i in range(n_epoch)], d_loss, color='red', label='Dev')
-    ax2.set_ylabel('Loss')
-    plt.show()
-    # Test data
-    test_model = SimpleNet(input_len, hidden_size, output_size)
-    test_model.load_state_dict(model.state_dict()) 
-    test_model.to(device)
-    for e in range(n_epoch):
-        for X, _ in test_loader:
-            model.eval()
-            with torch.no_grad():
-                X = X.to(device)
-                output = model(X)
+    # fig, (ax1, ax2) = plt.subplots(2, 1)
+    # ax1.plot([i for i in range(n_epoch)], t_acc, color='green', label='Train')
+    # ax1.plot([i for i in range(n_epoch)], d_acc, color='red', label='Dev')
+    # ax1.set_ylabel('Accuracy')
+    # ax2.plot([i for i in range(n_epoch)], t_loss, color='green', label='Train')
+    # ax2.plot([i for i in range(n_epoch)], d_loss, color='red', label='Dev')
+    # ax2.set_ylabel('Loss')
+    # plt.show()
+    # # Test data
+    # test_model = SimpleNet(input_len, hidden_size, output_size)
+    # test_model.load_state_dict(model.state_dict()) 
+    # test_model.to(device)
+    # for e in range(n_epoch):
+    #     for X, _ in test_loader:
+    #         model.eval()
+    #         with torch.no_grad():
+    #             X = X.to(device)
+    #             output = model(X)
 
 
 
