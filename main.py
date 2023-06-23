@@ -120,9 +120,7 @@ class Cdataset():
     def __init__(self, df, vocab, train=False):
         self.train = train
         self.vocab = vocab
-        self.text = []
-        self.text2 = df['text']
-        self.seq_length = []
+        self.text = df['text'] # Keep in mind that 
         for i in range(0, len(df['text'])):
             reformat = re.sub(r'\'|\[|\]|\s', '', df['text'][i]).split(',')
             self.text.append(reformat)
@@ -134,12 +132,46 @@ class Cdataset():
     def __len__(self):
         return self.X.size()[0]
     def __getitem__(self, index):
-        res = self.X[index], self.text2[index]
+        res = self.X[index], self.text[index] # Keep in mind that text is a string, not a list 
         if self.train==True:
-            res = self.X[index], self.Y[index], self.text2[index]
+            res = self.X[index], self.Y[index], self.text[index]
         return res
     def __shape__(self):
         return self.X.size()
+
+def train(model, params, loader, metric, mode='train'):
+    grad = True
+    if mode=='train':
+        model.train()
+    elif mode=='eval':
+        model.eval()
+        grad = False
+
+    g_acc = []
+    g_loss = []
+    for e in range(params['epochs']):
+        acc = 0
+        loss = 0
+        for X, Y, _ in loader:
+            optimizer.zero_grad()
+            X = X.to(params['device'])
+            Y = Y.to(params['device'])
+            X = torch.reshape(X, (X.size(0), 1, X.size(1)))
+
+            with torch.set_grad_enabled(grad):
+                y_hat = model(X)
+                loss = loss_fn(y_hat, Y)
+                if mode=='train':
+                    loss.backward()
+                    optimizer.step()
+                acc += metric(y_hat, Y)
+                loss += loss.item()           
+
+        g_acc.append(acc/len(loader))
+        g_loss.append(loss/len(loader))
+
+    return model, acc, loss
+
 
 if __name__ == '__main__':
 
@@ -152,7 +184,21 @@ if __name__ == '__main__':
     train_raw_text_df = pd.read_csv("dataset/train_processed.csv")
     test_raw_text_df = pd.read_csv("dataset/test_processed.csv")
     vocab = getVocab()
-    
+    params = {
+        "epochs": 50,
+        "batch_size": 256, 
+        'input_dim':len(vocab.vocabulary_),
+        'hidden_dim':50,
+        'output_dim':1,
+        'n_layers': 5,
+        'dropout': 0.25,
+        'bidirectional': True,
+        "split_seed": 42,
+        'train_dev_split': 0.65,
+        "optim_lr": 0.001, 
+        "device": torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    }
+
     n_epoch       = 500
     batch_size    = 128
     input_len     = len(vocab.vocabulary_) 
@@ -166,7 +212,7 @@ if __name__ == '__main__':
 
     train_data = Cdataset(train_raw_text_df, vocab, train=True)
     test_data = Cdataset(test_raw_text_df, vocab, train=False)
-    train_data, dev_data = torch.utils.data.random_split(train_data, [0.6, 0.4])
+    train_data, dev_data = torch.utils.data.random_split(train_data, [params['train_dev_split'], 1-params['train_dev_split']])
 
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
     dev_loader = DataLoader(dev_data, batch_size=batch_size, shuffle=True)
