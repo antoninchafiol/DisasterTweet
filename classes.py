@@ -21,6 +21,7 @@ class SimpleLSTM(torch.nn.Module):
         self.hidden_dim = hidden_dim
         self.num_layers = num_layers
         self.device = device
+        self.bidirectional_val = 2 if bidirectional == True else 1 
         # From PyTorch's Documentation
         # N = Batch_size
         # L = sequence length
@@ -37,15 +38,14 @@ class SimpleLSTM(torch.nn.Module):
         self.fc1 = torch.nn.Linear(hidden_dim, output_dim) 
         self.output= torch.nn.Sigmoid()
     def forward(self, x):
-        h_0 = Variable(torch.zeros(self.num_layers, x.size(0),  self.hidden_dim).to(self.device))
-        c_0 = Variable(torch.zeros(self.num_layers, x.size(0),  self.hidden_dim).to(self.device))
-        print(x.size())
+        h_0 = Variable(torch.zeros(self.num_layers * self.bidirectional_val, 
+                                   x.size(0),  self.hidden_dim).to(self.device))
+        c_0 = Variable(torch.zeros(self.num_layers * self.bidirectional_val, 
+                                   x.size(0),  self.hidden_dim).to(self.device))
+
         # Propagate input through LSTM
-        ula, (h_out, _) = self.lstm1(x, (h_0, c_0))
-        
-        h_out = h_out.view(-1, self.hidden_dim)
-        
-        out = self.fc1(h_out)
+        out, (h_out, _) = self.lstm1(x, (h_0, c_0))
+        out = out[:, -1, :]
+        out = self.fc1(out)
         out = self.output(out)
-       
-        return out
+        return out.squeeze(1)
