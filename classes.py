@@ -45,7 +45,14 @@ class SimpleLSTM(torch.nn.Module):
 
         # Propagate input through LSTM
         out, (h_out, _) = self.lstm1(x, (h_0, c_0))
+        print(out.shape)
         out = out[:, -1, :]
-        out = self.fc1(out)
+        print(out.shape)
+        print(h_out.shape)
+        h_out = h_out.view(-1, self.hidden_dim)
+        print(h_out.shape)
+        h_out = h_out[:, -1]
+        h_out = h_out.squeeze(0)
+        out = self.fc1(h_out)
         out = self.output(out)
         return out.squeeze(1)

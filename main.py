@@ -120,12 +120,13 @@ class Cdataset():
     def __init__(self, df, vocab, train=False):
         self.train = train
         self.vocab = vocab
+        self.seq_length = []
         self.text = df['text'] # Keep in mind that 
         for i in range(0, len(df['text'])):
             reformat = re.sub(r'\'|\[|\]|\s', '', df['text'][i]).split(',')
-            self.text.append(reformat)
+            # self.text.append(reformat)
             self.seq_length.append(len(reformat))
-        vec = vocab.transform(self.text2)
+        vec = vocab.transform(self.text)
         self.X = torch.from_numpy(vec.todense()).float()
         if train==True:
             self.Y = torch.from_numpy(np.array(df['target'])).float()
@@ -139,7 +140,7 @@ class Cdataset():
     def __shape__(self):
         return self.X.size()
 
-def train(model, params, loader, metric, mode='train'):
+def train(model, model_params, params, loader, mode='train', verbose=False):
     grad = True
     if mode=='train':
         model.train()
@@ -153,29 +154,32 @@ def train(model, params, loader, metric, mode='train'):
         acc = 0
         loss = 0
         for X, Y, _ in loader:
-            optimizer.zero_grad()
+            model_params['optimizer'].zero_grad()
             X = X.to(params['device'])
             Y = Y.to(params['device'])
             X = torch.reshape(X, (X.size(0), 1, X.size(1)))
-
             with torch.set_grad_enabled(grad):
                 y_hat = model(X)
-                loss = loss_fn(y_hat, Y)
+                loss = model_params['loss_fn'](y_hat, Y)
                 if mode=='train':
                     loss.backward()
-                    optimizer.step()
-                acc += metric(y_hat, Y)
+                    model_params['optimizer'].step()
+                acc += model_params['metric'](y_hat, Y)
                 loss += loss.item()           
-
-        g_acc.append(acc/len(loader))
-        g_loss.append(loss/len(loader))
+        e_acc = acc.detach().numpy()/len(loader)
+        e_loss = loss.detach().numpy()/len(loader)
+        g_acc.append(e_acc)
+        g_loss.append(e_loss)
+        if verbose:
+            print('[{} Epoch {}] - Loss: {} - Acc: {}'.format(
+                mode, e, np.round(e_loss, decimals=2), np.round(e_acc, decimals=2)))
 
     return model, acc, loss
 
 
 if __name__ == '__main__':
 
-    # Note for later:\
+    # Note for later:\w
     # Need to check if by processing the hashtags differently, 
     # this should give some better results 
     # (as for ex #earthquake might be good to keep)
@@ -185,111 +189,61 @@ if __name__ == '__main__':
     test_raw_text_df = pd.read_csv("dataset/test_processed.csv")
     vocab = getVocab()
     params = {
-        "epochs": 50,
-        "batch_size": 256, 
+        'epochs': 5,
+        'batch_size': 256, 
         'input_dim':len(vocab.vocabulary_),
         'hidden_dim':50,
         'output_dim':1,
         'n_layers': 5,
         'dropout': 0.25,
-        'bidirectional': True,
-        "split_seed": 42,
+        'bidirectional': False,
+        'split_seed': 42,
         'train_dev_split': 0.65,
-        "optim_lr": 0.001, 
-        "device": torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        'optim_lr': 0.001, 
+        'device': torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     }
 
-    n_epoch       = 500
-    batch_size    = 128
-    input_len     = len(vocab.vocabulary_) 
-    hidden_size   = 15
-    output_size   = 1
-    num_layers    = 5
-    dropout       = 0.25
-    bidirectional = False
-    lr            = 0.01
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     train_data = Cdataset(train_raw_text_df, vocab, train=True)
     test_data = Cdataset(test_raw_text_df, vocab, train=False)
     train_data, dev_data = torch.utils.data.random_split(train_data, [params['train_dev_split'], 1-params['train_dev_split']])
 
-    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
-    dev_loader = DataLoader(dev_data, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False)
+    train_loader = DataLoader(train_data, batch_size=params['batch_size'], shuffle=True)
+    dev_loader = DataLoader(dev_data, batch_size=params['batch_size'], shuffle=True)
+    test_loader = DataLoader(test_data, batch_size=params['batch_size'], shuffle=False)
     
-    model = SimpleLSTM(input_len, hidden_size, output_size, num_layers, bidirectional, dropout, device).to(device)
+    model = SimpleLSTM(params['input_dim'], params['hidden_dim'], params['output_dim'], 
+                       params['output_dim'], params['bidirectional'], params['dropout'], params['device']).to(params['device'])
     
-    optimizer = torch.optim.RMSprop(model.parameters(), lr=lr)
-    loss_fn = torch.nn.CrossEntropyLoss()
-    f1 = F1Score(task='binary').to(device)
+    model_params = {
+        'optimizer': torch.optim.RMSprop(model.parameters(), lr=params['optim_lr']), 
+        'loss_fn'  : torch.nn.CrossEntropyLoss(),
+        'metric'   : F1Score(task='binary').to(params['device'])
+    }
 
-    # Training step
-    t_acc = []
-    d_acc = []
-    t_loss = []
-    d_loss = []
-    for e in range(n_epoch):
-        train_acc = 0
-        train_loss = 0
-        optimizer.zero_grad()
-        for X, Y, _ in train_loader:
-            X = X.to(device)
-            Y = Y.to(device)
-            X = torch.reshape(X, (X.size(0), 1, X.size(1)))
-            optimizer.zero_grad()
-            model.train()
-            with torch.set_grad_enabled(True):
-                y_hat = model(X)
-                loss = loss_fn(y_hat, Y)
-                loss.backward()
-                optimizer.step()
-                train_acc += f1(y_hat, Y)
-                train_loss += loss.item()            
-
-        eval_acc = 0
-        eval_loss = 0
-        for X, Y, _ in dev_loader:
-            model.eval()
-            X = X.to(device)
-            Y = Y.to(device)
-            X = torch.reshape(X, (X.size(0), 1, X.size(1)))
-            # Add Dev part
-            with torch.set_grad_enabled(False):
-                y_hat = model(X)
-                loss = loss_fn(y_hat, Y)
-                eval_acc  += f1(y_hat, Y)
-                eval_loss += loss.item()
-
-        train_acc_mean  = train_acc/len(train_loader)
-        eval_acc_mean   = eval_acc/len(dev_loader)
-        train_loss_mean = train_loss/len(train_loader)
-        eval_loss_mean  = eval_loss/len(dev_loader)
-        t_acc.append(train_acc_mean)
-        d_acc.append(eval_acc_mean)
-        t_loss.append(train_loss_mean)
-        d_loss.append(eval_loss_mean)
-        if e%10==0:
-            print('After {} epoch,  Train/Dev Loss: {} / {} -- Train/Dev F1: {} / {}'.format(e,  train_loss_mean, eval_loss_mean, train_acc_mean, eval_acc_mean))
-
+    # Train
+    model, train_acc, train_loss = train(model, model_params, params, train_loader, mode='train', verbose=True)
+    # Eval 
+    model, train_acc, train_loss = train(model, model_params, params, dev_loader, mode='eval', verbose=True)
     # Display some graphs
-    fig, (ax1, ax2) = plt.subplots(2, 1)
-    ax1.plot([i for i in range(n_epoch)], t_acc, color='green', label='Train')
-    ax1.plot([i for i in range(n_epoch)], d_acc, color='red', label='Dev')
-    ax1.set_ylabel('Accuracy')
-    ax2.plot([i for i in range(n_epoch)], t_loss, color='green', label='Train')
-    ax2.plot([i for i in range(n_epoch)], d_loss, color='red', label='Dev')
-    ax2.set_ylabel('Loss')
-    plt.show()
-    # Test data
-    test_model = SimpleLSTM(input_len, hidden_size, output_size, num_layers, bidirectional, dropout, device).to(device)
-    test_model.load_state_dict(model.state_dict())
-    for e in range(n_epoch):
-        for X, _ in test_loader:
-            model.eval()
-            with torch.no_grad():
-                X = X.to(device)
-                output = model(X)
+    # fig, (ax1, ax2) = plt.subplots(2, 1)
+    # ax1.plot([i for i in range(n_epoch)], t_acc, color='green', label='Train')
+    # ax1.plot([i for i in range(n_epoch)], d_acc, color='red', label='Dev')
+    # ax1.set_ylabel('Accuracy')
+    # ax2.plot([i for i in range(n_epoch)], t_loss, color='green', label='Train')
+    # ax2.plot([i for i in range(n_epoch)], d_loss, color='red', label='Dev')
+    # ax2.set_ylabel('Loss')
+    # plt.show()
+    # # Test data
+    # test_model = SimpleLSTM(input_len, hidden_size, output_size, num_layers, bidirectional, dropout, device).to(device)
+    # test_model.load_state_dict(model.state_dict())
+    # for e in range(n_epoch):
+    #     for X, _ in test_loader:
+    #         model.eval()
+    #         with torch.no_grad():
+    #             X = X.to(device)
+    #             output = model(X)
 
 
 
