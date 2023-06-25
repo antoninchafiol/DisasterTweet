@@ -214,7 +214,7 @@ if __name__ == '__main__':
     test_loader = DataLoader(test_data, batch_size=params['batch_size'], shuffle=False)
     
     model = SimpleLSTM(params['input_dim'], params['hidden_dim'], params['output_dim'], 
-                       params['output_dim'], params['bidirectional'], params['dropout'], params['device']).to(params['device'])
+                       params['n_layers'], params['bidirectional'], params['dropout'], params['device']).to(params['device'])
     
     model_params = {
         'optimizer': torch.optim.RMSprop(model.parameters(), lr=params['optim_lr']), 
