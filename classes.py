@@ -35,7 +35,7 @@ class SimpleLSTM(torch.nn.Module):
                                    dropout = dropout,
                                    batch_first = True
                                    )
-        self.fc1 = torch.nn.Linear(hidden_dim, output_dim) 
+        self.fc1 = torch.nn.Linear(hidden_dim * num_layers * self.bidirectional_val, output_dim) 
         self.output= torch.nn.Sigmoid()
     def forward(self, x):
         h_0 = Variable(torch.zeros(self.num_layers * self.bidirectional_val, 
@@ -46,10 +46,7 @@ class SimpleLSTM(torch.nn.Module):
         # Propagate input through LSTM
         out, (h_out, _) = self.lstm1(x, (h_0, c_0))
         out = out[:, -1, :]
-        print(h_out.shape)
-        h_out = h_out.view(-1, self.hidden_dim * self.bidirectional_val)
-        print(out.shape)
-        print(h_out.shape)
+        h_out = h_out.view(-1, self.hidden_dim * self.num_layers * self.bidirectional_val)
         out = self.fc1(h_out)
         out = self.output(out)
         return out.squeeze(1)
