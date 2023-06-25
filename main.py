@@ -141,40 +141,75 @@ class Cdataset():
         return self.X.size()
 
 def train(model, model_params, params, loader, mode='train', verbose=False):
-    grad = True
-    if mode=='train':
-        model.train()
-    elif mode=='eval':
-        model.eval()
-        grad = False
+    g_acc = {
+        'train': [],
+        'eval': []
+    }
+    g_loss = {
+        'train': [],
+        'eval': []
+    }
+    if mode!='both':
+        if mode=='train':
+            model.train()
+        elif mode=='eval':
+            model.eval()
 
-    g_acc = []
-    g_loss = []
-    for e in range(params['epochs']):
-        acc = 0
-        loss = 0
-        for X, Y, _ in loader:
-            model_params['optimizer'].zero_grad()
-            X = X.to(params['device'])
-            Y = Y.to(params['device'])
-            X = torch.reshape(X, (X.size(0), 1, X.size(1)))
-            with torch.set_grad_enabled(grad):
-                y_hat = model(X)
-                loss = model_params['loss_fn'](y_hat, Y)
-                if mode=='train':
-                    loss.backward()
-                    model_params['optimizer'].step()
-                acc += model_params['metric'](y_hat, Y)
-                loss += loss.item()           
-        e_acc = acc.detach().numpy()/len(loader)
-        e_loss = loss.detach().numpy()/len(loader)
-        g_acc.append(e_acc)
-        g_loss.append(e_loss)
-        if verbose:
-            print('[{} Epoch {}] - Loss: {} - Acc: {}'.format(
-                mode, e, np.round(e_loss, decimals=2), np.round(e_acc, decimals=2)))
-
-    return model, acc, loss
+        for e in range(params['epochs']):
+            acc = 0
+            loss = 0
+            for X, Y, _ in loader[mode]:
+                model_params['optimizer'].zero_grad()
+                X = X.to(params['device'])
+                Y = Y.to(params['device'])
+                X = torch.reshape(X, (X.size(0), 1, X.size(1)))
+                with torch.set_grad_enabled(mode=='train'):
+                    y_hat = model(X)
+                    loss = model_params['loss_fn'](y_hat, Y)
+                    if mode=='train':
+                        loss.backward()
+                        model_params['optimizer'].step()
+                    acc += model_params['metric'](y_hat, Y)
+                    
+                    loss += loss.item()           
+            e_acc = acc.detach().numpy()/len(loader[mode])
+            e_loss = loss.detach().numpy()/len(loader[mode])
+            g_acc[mode].append(e_acc)
+            g_loss[mode].append(e_loss)
+            if verbose:
+                print('[{} Epoch {}] - Loss: {} - Acc: {}'.format(
+                    mode, e, np.round(e_loss, decimals=2), np.round(e_acc, decimals=2)))
+    elif mode=='both':
+        for e in range(params['epochs']):
+            acc = 0
+            loss = 0
+            for loop_mode in 'train', 'eval':
+                acc = 0
+                loss = 0
+                for X, Y, _ in loader[loop_mode]:
+                    model_params['optimizer'].zero_grad()
+                    X = X.to(params['device'])
+                    Y = Y.to(params['device'])
+                    X = torch.reshape(X, (X.size(0), 1, X.size(1)))
+                    with torch.set_grad_enabled(loop_mode=='train'):
+                        y_hat = model(X)
+                        loss = model_params['loss_fn'](y_hat, Y)
+                        if loop_mode=='train':
+                            loss.backward()
+                            model_params['optimizer'].step()
+                        acc += model_params['metric'](y_hat, Y)
+                        loss += loss.item()           
+                e_acc = acc.detach().numpy()/len(loader[loop_mode])
+                e_loss = loss.detach().numpy()/len(loader[loop_mode])
+                g_acc[loop_mode].append(e_acc)
+                g_loss[loop_mode].append(e_loss)
+            if verbose:
+                print('Epoch {} - [Train] Loss: {} - Acc: {}, [Eval] Loss: {} - Acc: {}'.format(
+                    e, 
+                    np.round(g_loss['train'][-1], decimals=2), np.round(g_acc['train'][-1], decimals=2),
+                    np.round(g_loss['eval'][-1], decimals=2),  np.round(g_acc['eval'][-1], decimals=2)))
+            
+    return model, g_acc, g_loss
 
 
 if __name__ == '__main__':
@@ -189,17 +224,17 @@ if __name__ == '__main__':
     test_raw_text_df = pd.read_csv("dataset/test_processed.csv")
     vocab = getVocab()
     params = {
-        'epochs': 5,
+        'epochs': 50,
         'batch_size': 256, 
         'input_dim':len(vocab.vocabulary_),
         'hidden_dim':50,
         'output_dim':1,
         'n_layers': 5,
         'dropout': 0.25,
-        'bidirectional': False,
+        'bidirectional': True,
         'split_seed': 42,
         'train_dev_split': 0.65,
-        'optim_lr': 0.001, 
+        'optim_lr': 0.01, 
         'device': torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     }
 
@@ -208,14 +243,15 @@ if __name__ == '__main__':
     train_data = Cdataset(train_raw_text_df, vocab, train=True)
     test_data = Cdataset(test_raw_text_df, vocab, train=False)
     train_data, dev_data = torch.utils.data.random_split(train_data, [params['train_dev_split'], 1-params['train_dev_split']])
-
-    train_loader = DataLoader(train_data, batch_size=params['batch_size'], shuffle=True)
-    dev_loader = DataLoader(dev_data, batch_size=params['batch_size'], shuffle=True)
-    test_loader = DataLoader(test_data, batch_size=params['batch_size'], shuffle=False)
     
     model = SimpleLSTM(params['input_dim'], params['hidden_dim'], params['output_dim'], 
                        params['n_layers'], params['bidirectional'], params['dropout'], params['device']).to(params['device'])
-    
+    loaders = {
+        'train': DataLoader(train_data, batch_size=params['batch_size'], shuffle=True),
+        'eval' : DataLoader(dev_data,   batch_size=params['batch_size'], shuffle=True),
+        'test' : DataLoader(test_data,  batch_size=params['batch_size'], shuffle=False)
+    }
+
     model_params = {
         'optimizer': torch.optim.RMSprop(model.parameters(), lr=params['optim_lr']), 
         'loss_fn'  : torch.nn.CrossEntropyLoss(),
@@ -223,18 +259,19 @@ if __name__ == '__main__':
     }
 
     # Train
-    model, train_acc, train_loss = train(model, model_params, params, train_loader, mode='train', verbose=True)
-    # Eval 
-    model, train_acc, train_loss = train(model, model_params, params, dev_loader, mode='eval', verbose=True)
+    # model, train_acc, train_loss = train(model, model_params, params, loaders, mode='train', verbose=True)
+    # # Eval 
+    # model, eval_acc, eval_loss = train(model, model_params, params, loaders, mode='eval', verbose=True)
+    model, acc, loss = train(model, model_params, params, loaders, mode='both', verbose=True)
     # Display some graphs
-    # fig, (ax1, ax2) = plt.subplots(2, 1)
-    # ax1.plot([i for i in range(n_epoch)], t_acc, color='green', label='Train')
-    # ax1.plot([i for i in range(n_epoch)], d_acc, color='red', label='Dev')
-    # ax1.set_ylabel('Accuracy')
-    # ax2.plot([i for i in range(n_epoch)], t_loss, color='green', label='Train')
-    # ax2.plot([i for i in range(n_epoch)], d_loss, color='red', label='Dev')
-    # ax2.set_ylabel('Loss')
-    # plt.show()
+    fig, (ax1, ax2) = plt.subplots(2, 1)
+    ax1.plot([i for i in range(params['epochs'])], acc['train'], color='green', label='Train')
+    ax1.plot([i for i in range(params['epochs'])], acc['eval'], color='red', label='Dev')
+    ax1.set_ylabel('Accuracy')
+    ax2.plot([i for i in range(params['epochs'])], loss['train'], color='green', label='Train')
+    ax2.plot([i for i in range(params['epochs'])], loss['eval'], color='red', label='Dev')
+    ax2.set_ylabel('Loss')
+    plt.show()
     # # Test data
     # test_model = SimpleLSTM(input_len, hidden_size, output_size, num_layers, bidirectional, dropout, device).to(device)
     # test_model.load_state_dict(model.state_dict())
