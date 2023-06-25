@@ -181,8 +181,6 @@ def train(model, model_params, params, loader, mode='train', verbose=False):
                     mode, e, np.round(e_loss, decimals=2), np.round(e_acc, decimals=2)))
     elif mode=='both':
         for e in range(params['epochs']):
-            acc = 0
-            loss = 0
             for loop_mode in 'train', 'eval':
                 acc = 0
                 loss = 0
@@ -198,11 +196,14 @@ def train(model, model_params, params, loader, mode='train', verbose=False):
                             loss.backward()
                             model_params['optimizer'].step()
                         acc += model_params['metric'](y_hat, Y)
+                        # print(model_params['metric'](y_hat, Y))
                         loss += loss.item()           
                 e_acc = acc.detach().numpy()/len(loader[loop_mode])
+                # print(e_acc)
                 e_loss = loss.detach().numpy()/len(loader[loop_mode])
                 g_acc[loop_mode].append(e_acc)
                 g_loss[loop_mode].append(e_loss)
+
             if verbose:
                 print('Epoch {} - [Train] Loss: {} - Acc: {}, [Eval] Loss: {} - Acc: {}'.format(
                     e, 
@@ -225,20 +226,18 @@ if __name__ == '__main__':
     vocab = getVocab()
     params = {
         'epochs': 50,
-        'batch_size': 256, 
+        'batch_size': 512, 
         'input_dim':len(vocab.vocabulary_),
         'hidden_dim':50,
         'output_dim':1,
         'n_layers': 5,
         'dropout': 0.25,
-        'bidirectional': True,
+        'bidirectional': False,
         'split_seed': 42,
         'train_dev_split': 0.65,
         'optim_lr': 0.01, 
         'device': torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     }
-
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     train_data = Cdataset(train_raw_text_df, vocab, train=True)
     test_data = Cdataset(test_raw_text_df, vocab, train=False)
@@ -264,14 +263,14 @@ if __name__ == '__main__':
     # model, eval_acc, eval_loss = train(model, model_params, params, loaders, mode='eval', verbose=True)
     model, acc, loss = train(model, model_params, params, loaders, mode='both', verbose=True)
     # Display some graphs
-    fig, (ax1, ax2) = plt.subplots(2, 1)
-    ax1.plot([i for i in range(params['epochs'])], acc['train'], color='green', label='Train')
-    ax1.plot([i for i in range(params['epochs'])], acc['eval'], color='red', label='Dev')
-    ax1.set_ylabel('Accuracy')
-    ax2.plot([i for i in range(params['epochs'])], loss['train'], color='green', label='Train')
-    ax2.plot([i for i in range(params['epochs'])], loss['eval'], color='red', label='Dev')
-    ax2.set_ylabel('Loss')
-    plt.show()
+    # fig, (ax1, ax2) = plt.subplots(2, 1)
+    # ax1.plot([i for i in range(params['epochs'])], acc['train'], color='green', label='Train')
+    # ax1.plot([i for i in range(params['epochs'])], acc['eval'], color='red', label='Dev')
+    # ax1.set_ylabel('Accuracy')
+    # ax2.plot([i for i in range(params['epochs'])], loss['train'], color='green', label='Train')
+    # ax2.plot([i for i in range(params['epochs'])], loss['eval'], color='red', label='Dev')
+    # ax2.set_ylabel('Loss')
+    # plt.show()
     # # Test data
     # test_model = SimpleLSTM(input_len, hidden_size, output_size, num_layers, bidirectional, dropout, device).to(device)
     # test_model.load_state_dict(model.state_dict())

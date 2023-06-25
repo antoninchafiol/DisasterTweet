@@ -46,6 +46,23 @@ class SimpleLSTM(torch.nn.Module):
         out = self.output(out)
         return out.squeeze(1)
     
+    # Working one (Not bidirectionnal)
+
+    # def forward(self, x):
+    #     h_0 = Variable(torch.zeros(self.num_layers * self.bidirectional_val, 
+    #                                x.size(0),  self.hidden_dim).to(self.device))
+    #     c_0 = Variable(torch.zeros(self.num_layers * self.bidirectional_val, 
+    #                                x.size(0),  self.hidden_dim).to(self.device))
+
+    #     # Propagate input through LSTM
+    #     out, (h_out, _) = self.lstm1(x, (h_0, c_0))
+    #     out = out[:, -1, :]
+    #     out = self.fc1(out)
+    #     out = self.output(out)
+    #     return out.squeeze(1) 
+
+
+
 # class MultiLSTM(torch.nn.Module):
 #     def __init__(self, input_dim, hidden_dim, output_dim, num_layers, bidirectional, dropout, device ):
 #         super().__init__()
