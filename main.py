@@ -225,10 +225,10 @@ if __name__ == '__main__':
     test_raw_text_df = pd.read_csv("dataset/test_processed.csv")
     vocab = getVocab()
     params = {
-        'epochs': 50,
+        'epochs': 10,
         'batch_size': 512, 
         'input_dim':len(vocab.vocabulary_),
-        'hidden_dim':50,
+        'hidden_dim':10,
         'output_dim':1,
         'n_layers': 5,
         'dropout': 0.25,

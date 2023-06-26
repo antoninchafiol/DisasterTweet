@@ -16,7 +16,7 @@ class SimpleNet(torch.nn.Module):
 
 
 class SimpleLSTM(torch.nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, num_layers, bidirectional, dropout, device ):
+    def __init__(self, input_dim, hidden_dim, output_dim, num_layers, bidirectional, dropout, device):
         super().__init__()
         self.hidden_dim = hidden_dim
         self.num_layers = num_layers
@@ -30,24 +30,8 @@ class SimpleLSTM(torch.nn.Module):
                                    dropout = dropout,
                                    batch_first = True
                                    )
-        self.fc1 = torch.nn.Linear(hidden_dim * num_layers * self.bidirectional_val, output_dim) 
+        self.fc1 = torch.nn.Linear(hidden_dim * self.bidirectional_val, output_dim) 
         self.output= torch.nn.Sigmoid()
-    def forward(self, x):
-        h_0 = Variable(torch.zeros(self.num_layers * self.bidirectional_val, 
-                                   x.size(0),  self.hidden_dim).to(self.device))
-        c_0 = Variable(torch.zeros(self.num_layers * self.bidirectional_val, 
-                                   x.size(0),  self.hidden_dim).to(self.device))
-
-        # Propagate input through LSTM
-        out, (h_out, _) = self.lstm1(x, (h_0, c_0))
-        h_out = h_out.view(-1, self.hidden_dim * self.num_layers * self.bidirectional_val)
-        h_out= h_out.squeeze(0)
-        out = self.fc1(h_out)
-        out = self.output(out)
-        return out.squeeze(1)
-    
-    # Working one (Not bidirectionnal)
-
     # def forward(self, x):
     #     h_0 = Variable(torch.zeros(self.num_layers * self.bidirectional_val, 
     #                                x.size(0),  self.hidden_dim).to(self.device))
@@ -56,10 +40,36 @@ class SimpleLSTM(torch.nn.Module):
 
     #     # Propagate input through LSTM
     #     out, (h_out, _) = self.lstm1(x, (h_0, c_0))
+    #     # print(out.shape)
+    #     # print(h_out.shape)
     #     out = out[:, -1, :]
+    #     h_out = h_out.view(-1, self.hidden_dim * self.num_layers * self.bidirectional_val)
+
     #     out = self.fc1(out)
     #     out = self.output(out)
-    #     return out.squeeze(1) 
+    #     return out.squeeze(1)
+    
+    # Working one (Not bidirectionnal)
+
+    def forward(self, x):
+        batch_size = x.size(0)
+        h_0 = Variable(torch.zeros(self.num_layers * self.bidirectional_val, 
+                                   batch_size,  self.hidden_dim).to(self.device))
+        c_0 = Variable(torch.zeros(self.num_layers * self.bidirectional_val, 
+                                   batch_size,  self.hidden_dim).to(self.device))
+
+        # Propagate input through LSTM
+        out, (h_out, _) = self.lstm1(x, (h_0, c_0))
+        batch_size = out.shape[0]
+
+        # print(h_out.shape)
+        h_out = h_out.view(self.num_layers * self.bidirectional_val, batch_size, self.hidden_dim)
+        h_out = h_out[-self.bidirectional_val, :]
+        h_out = h_out.squeeze(0)
+        # print(h_out.shape)
+        out = self.fc1(h_out)
+        out = self.output(out)
+        return out.squeeze(1) 
 
 
 
