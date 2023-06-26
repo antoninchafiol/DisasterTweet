@@ -232,7 +232,7 @@ if __name__ == '__main__':
         'output_dim':1,
         'n_layers': 5,
         'dropout': 0.25,
-        'bidirectional': False,
+        'bidirectional': True,
         'split_seed': 42,
         'train_dev_split': 0.65,
         'optim_lr': 0.01, 
@@ -258,10 +258,10 @@ if __name__ == '__main__':
     }
 
     # Train
-    # model, train_acc, train_loss = train(model, model_params, params, loaders, mode='train', verbose=True)
+    model, train_acc, train_loss = train(model, model_params, params, loaders, mode='both', verbose=True)
     # # Eval 
     # model, eval_acc, eval_loss = train(model, model_params, params, loaders, mode='eval', verbose=True)
-    model, acc, loss = train(model, model_params, params, loaders, mode='both', verbose=True)
+    # model, acc, loss = train(model, model_params, params, loaders, mode='both', verbose=True)
     # Display some graphs
     # fig, (ax1, ax2) = plt.subplots(2, 1)
     # ax1.plot([i for i in range(params['epochs'])], acc['train'], color='green', label='Train')
