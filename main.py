@@ -259,9 +259,7 @@ if __name__ == '__main__':
 
     # Train
     model, train_acc, train_loss = train(model, model_params, params, loaders, mode='both', verbose=True)
-    # # Eval 
-    # model, eval_acc, eval_loss = train(model, model_params, params, loaders, mode='eval', verbose=True)
-    # model, acc, loss = train(model, model_params, params, loaders, mode='both', verbose=True)
+
     # Display some graphs
     # fig, (ax1, ax2) = plt.subplots(2, 1)
     # ax1.plot([i for i in range(params['epochs'])], acc['train'], color='green', label='Train')

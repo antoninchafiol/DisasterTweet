@@ -41,22 +41,12 @@ class SimpleLSTM(torch.nn.Module):
                                    batch_size,  self.hidden_dim).to(self.device))
 
         # Propagate input through LSTM
-        out, (h_out, _) = self.lstm1(x, (h_0, c_0))
+        _, (h_out, _) = self.lstm1(x, (h_0, c_0))
 
         # Concatenating bidirectionnal layers method --> Work but dsoesn't look better than 
         # common unidirectional one and not 100% sure if it's the rigfht way
-        o1 = h_out[-1]
-        o2 = h_out[-2]
-        o3 = torch.cat((o1,o2),1).squeeze(0)
-        print(o3.shape)
-
-        # View method. and/or using same as before: Kinda Work (Never goes higher than 60%) 
-        h_out = h_out.view(self.num_layers , batch_size, self.hidden_dim * self.bidirectional_val)
-        h_out = h_out[-1]
-        h_out = h_out.squeeze(0)
-
-
-        out = self.dropout(o3)
+        h_out = torch.cat((h_out[-1],h_out[-2]), dim=-1).squeeze(0)
+        out = self.dropout(h_out)
         out = self.fc1(out)
         out = self.output(out)
         return out.squeeze(1) 
