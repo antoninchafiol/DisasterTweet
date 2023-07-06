@@ -243,7 +243,7 @@ if __name__ == '__main__':
     test_data = Cdataset(test_raw_text_df, vocab, train=False)
     train_data, dev_data = torch.utils.data.random_split(train_data, [params['train_dev_split'], 1-params['train_dev_split']])
     
-    model = SimpleLSTM(params['input_dim'], params['hidden_dim'], params['output_dim'], 
+    model = MultiLSTM(params['input_dim'], params['hidden_dim'], params['output_dim'], 
                        params['n_layers'], params['bidirectional'], params['dropout'], params['device']).to(params['device'])
     loaders = {
         'train': DataLoader(train_data, batch_size=params['batch_size'], shuffle=True),
