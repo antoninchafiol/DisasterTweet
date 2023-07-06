@@ -53,40 +53,51 @@ class SimpleLSTM(torch.nn.Module):
 
 
 
-# class MultiLSTM(torch.nn.Module):
-#     def __init__(self, input_dim, hidden_dim, output_dim, num_layers, bidirectional, dropout, device ):
-#         super().__init__()
-#         self.hidden_dim = hidden_dim
-#         self.num_layers = num_layers
-#         self.device = device
-#         self.bidirectional_val = 2 if bidirectional == True else 1 
+class MultiLSTM(torch.nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim, num_layers, bidirectional, dropout, device ):
+        super().__init__()
+        self.hidden_dim = hidden_dim
+        self.num_layers = num_layers
+        self.device = device
+        self.bidirectional_val = 2 if bidirectional == True else 1 
 
-#         self.lstm1 = torch.nn.LSTM(input_dim, 
-#                                    hidden_dim, 
-#                                    num_layers = num_layers,
-#                                    bidirectional = bidirectional,
-#                                    batch_first = True
-#                                    )
-#         self.fc1 = torch.nn.Linear(hidden_dim * num_layers * self.bidirectional_val, (hidden_dim * num_layers * self.bidirectional_val)/2) 
-#         self.dropout1 = torch.nn.Dropout(dropout)
-#         self.lstm2 = torch.nn.LSTM(input_dim, 
-#                                    hidden_dim, 
-#                                    num_layers = num_layers,
-#                                    bidirectional = bidirectional,
-#                                    batch_first = True
-#                                    )
-#         self.fc2 = 
-#         self.output= torch.nn.Sigmoid()
-#     def forward(self, x):
-#         h_0 = Variable(torch.zeros(self.num_layers * self.bidirectional_val, 
-#                                    x.size(0),  self.hidden_dim).to(self.device))
-#         c_0 = Variable(torch.zeros(self.num_layers * self.bidirectional_val, 
-#                                    x.size(0),  self.hidden_dim).to(self.device))
+        self.lstm1 = torch.nn.LSTM(input_dim, 
+                                   hidden_dim, 
+                                   num_layers = num_layers,
+                                   bidirectional = bidirectional,
+                                   batch_first = True
+                                   )
+        self.fc1 = torch.nn.Linear(hidden_dim * self.bidirectional_val, (hidden_dim * self.bidirectional_val)/2) 
+        self.dropout1 = torch.nn.Dropout(dropout)
+        self.lstm2 = torch.nn.LSTM((hidden_dim * self.bidirectional_val)/2, 
+                                   hidden_dim/6, 
+                                   num_layers = num_layers,
+                                   bidirectional = bidirectional,
+                                   batch_first = True
+                                   )
+        self.fc2 = torch.nn.Linear((hidden_dim/2) * self.bidirectional_val, output_dim)
+        self.output= torch.nn.Sigmoid()
+    def forward(self, x):
+        h_0 = Variable(torch.zeros(self.num_layers * self.bidirectional_val, 
+                                   x.size(0),  self.hidden_dim).to(self.device))
+        c_0 = Variable(torch.zeros(self.num_layers * self.bidirectional_val, 
+                                   x.size(0),  self.hidden_dim).to(self.device))
 
-#         # Propagate input through LSTM
-#         out, (h_out, _) = self.lstm1(x, (h_0, c_0))
-#         out = out[:, -1, :]
-#         h_out = h_out.view(-1, self.hidden_dim * self.num_layers * self.bidirectional_val)
-#         out = self.fc1(h_out)
-#         out = self.output(out)
-#         return out.squeeze(1)
+        # Propagate input through LSTM
+        _, (h_out, _) = self.lstm1(x, (h_0, c_0))
+        # Concatenating bidirectionnal layers method --> Work but dsoesn't look better than 
+        # common unidirectional one and not 100% sure if it's the rigfht way
+        h_out = torch.cat((h_out[-1],h_out[-2]), dim=-1).squeeze(0)
+        out = self.dropout1(h_out)
+        out = self.fc1(out)
+        
+        h_0 = Variable(torch.zeros(self.num_layers * self.bidirectional_val, 
+                                   x.size(0),  self.hidden_dim).to(self.device))
+        c_0 = Variable(torch.zeros(self.num_layers * self.bidirectional_val, 
+                                   x.size(0),  self.hidden_dim).to(self.device))
+        
+        _, (h_out, _) = self.lstm2(out, (h_0, c_0))
+        h_out = torch.cat((h_out[-1],h_out[-2]), dim=-1).squeeze(0)
+        out = self.fc2(out)
+        out = self.output(out)
+        return out.squeeze(1)
