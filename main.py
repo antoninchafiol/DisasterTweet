@@ -258,7 +258,7 @@ if __name__ == '__main__':
 
     model_params = {
         'optimizer': torch.optim.RMSprop(model.parameters(), lr=params['optim_lr']), 
-        'loss_fn'  : torch.nn.CrossEntropyLoss(),
+        'loss_fn'  : torch.nn.BCELoss(),
         'metric'   : F1Score(task='binary').to(params['device'])
     }
 
