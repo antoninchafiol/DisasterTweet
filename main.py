@@ -191,6 +191,8 @@ def train(model, model_params, params, loader, mode='train', verbose=False):
                     X = torch.reshape(X, (X.size(0), 1, X.size(1)))
                     with torch.set_grad_enabled(loop_mode=='train'):
                         y_hat = model(X)
+                        # print(y_hat)
+                        # print(Y)
                         loss = model_params['loss_fn'](y_hat, Y)
                         if loop_mode=='train':
                             loss.backward()
@@ -228,7 +230,9 @@ if __name__ == '__main__':
         'epochs': 10,
         'batch_size': 512, 
         'input_dim':len(vocab.vocabulary_),
+        'input_dim2':10,
         'hidden_dim':10,
+        'hidden_dim2':5,
         'output_dim':1,
         'n_layers': 5,
         'dropout': 0.25,
@@ -242,8 +246,9 @@ if __name__ == '__main__':
     train_data = Cdataset(train_raw_text_df, vocab, train=True)
     test_data = Cdataset(test_raw_text_df, vocab, train=False)
     train_data, dev_data = torch.utils.data.random_split(train_data, [params['train_dev_split'], 1-params['train_dev_split']])
-    
-    model = MultiLSTM(params['input_dim'], params['hidden_dim'], params['output_dim'], 
+    # model = SimpleLSTM(params['input_dim'], params['hidden_dim'], params['output_dim'], 
+    #                    params['n_layers'], params['bidirectional'], params['dropout'], params['device']).to(params['device'])
+    model = MultiLSTM(params['input_dim'], params['input_dim2'], params['hidden_dim'], params['hidden_dim2'], params['output_dim'], 
                        params['n_layers'], params['bidirectional'], params['dropout'], params['device']).to(params['device'])
     loaders = {
         'train': DataLoader(train_data, batch_size=params['batch_size'], shuffle=True),
