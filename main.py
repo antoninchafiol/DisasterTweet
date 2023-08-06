@@ -5,15 +5,12 @@ from torch.utils.data import Dataset, DataLoader
 from torchmetrics import F1Score
 import pandas as pd
 import numpy as np
-import math
 import seaborn as sns
 
 import matplotlib.pyplot as plt
 
-from sklearn.feature_extraction.text import TfidfVectorizer,CountVectorizer
-from scipy.sparse import hstack, csr_matrix
+from sklearn.feature_extraction.text import CountVectorizer
 from torchtext.vocab import GloVe
-from torch.utils.data import Dataset
 from nltk import word_tokenize
 from nltk.corpus import stopwords, webtext
 import nltk
@@ -116,30 +113,6 @@ def getVocab(df=pd.read_csv("dataset/merged_data.csv")):
     vocab.fit_transform(df['text'])
     return vocab
 
-class Cdataset():
-    def __init__(self, df, vocab, train=False):
-        self.train = train
-        self.vocab = vocab
-        self.seq_length = []
-        self.text = df['text'] # Keep in mind that 
-        for i in range(0, len(df['text'])):
-            reformat = re.sub(r'\'|\[|\]|\s', '', df['text'][i]).split(',')
-            # self.text.append(reformat)
-            self.seq_length.append(len(reformat))
-        vec = vocab.transform(self.text)
-        self.X = torch.from_numpy(vec.todense()).float()
-        if train==True:
-            self.Y = torch.from_numpy(np.array(df['target'])).float()
-    def __len__(self):
-        return self.X.size()[0]
-    def __getitem__(self, index):
-        res = self.X[index], self.text[index] # Keep in mind that text is a string, not a list 
-        if self.train==True:
-            res = self.X[index], self.Y[index], self.text[index]
-        return res
-    def __shape__(self):
-        return self.X.size()
-
 def train(model, model_params, params, loader, mode='train', verbose=False):
     g_acc = {
         'train': [],
@@ -188,7 +161,6 @@ def train(model, model_params, params, loader, mode='train', verbose=False):
                     model_params['optimizer'].zero_grad()
                     X = X.to(params['device'])
                     Y = Y.to(params['device'])
-                    X = torch.reshape(X, (X.size(0), 1, X.size(1)))
                     with torch.set_grad_enabled(loop_mode=='train'):
                         y_hat = model(X)
                         # print(y_hat)
@@ -200,9 +172,9 @@ def train(model, model_params, params, loader, mode='train', verbose=False):
                         acc += model_params['metric'](y_hat, Y)
                         # print(model_params['metric'](y_hat, Y))
                         loss += loss.item()           
-                e_acc = acc.detach().numpy()/len(loader[loop_mode])
+                e_acc = acc.cpu().detach().numpy()/len(loader[loop_mode])
                 # print(e_acc)
-                e_loss = loss.detach().numpy()/len(loader[loop_mode])
+                e_loss = loss.cpu().detach().numpy()/len(loader[loop_mode])
                 g_acc[loop_mode].append(e_acc)
                 g_loss[loop_mode].append(e_loss)
 
@@ -227,43 +199,59 @@ if __name__ == '__main__':
     test_raw_text_df = pd.read_csv("dataset/test_processed.csv")
     vocab = getVocab()
     params = {
-        'epochs': 10,
-        'batch_size': 512, 
-        'input_dim':len(vocab.vocabulary_),
-        'input_dim2':10,
+        # Global
+        'epochs': 10000,
+        'batch_size': 128, 
+        'device': torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
+        'split_seed': 42,
+        'train_dev_split': 0.65,
+        # Vocabulary 
+        'seq_length': 35, 
+        'embedding_dim': 50, 
+        # Model
         'hidden_dim':10,
-        'hidden_dim2':5,
         'output_dim':1,
         'n_layers': 5,
         'dropout': 0.25,
-        'bidirectional': True,
-        'split_seed': 42,
-        'train_dev_split': 0.65,
+        'bidirectional': False,
+        # Optimizer
         'optim_lr': 0.01, 
-        'device': torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     }
 
-    train_data = Cdataset(train_raw_text_df, vocab, train=True)
-    test_data = Cdataset(test_raw_text_df, vocab, train=False)
-    train_data, dev_data = torch.utils.data.random_split(train_data, [params['train_dev_split'], 1-params['train_dev_split']])
-    # model = SimpleLSTM(params['input_dim'], params['hidden_dim'], params['output_dim'], 
+
+
+    embeddings = {}
+    with open('glove_pretrained/glove.6B.{}d.txt'.format(params['embedding_dim']), "r", encoding="utf-8") as f:
+        for line in f:
+            # print(line)
+            values = line.split()
+            word = values[0]
+            vector = np.asarray(values[1:], dtype="float32")
+            embeddings[word] = vector
+
+    # train_data = Cdataset(train_raw_text_df, vocab, train=True)
+    # test_data  = Cdataset(test_raw_text_df, vocab,  train=False)
+    # train_data, dev_data = torch.utils.data.random_split(train_data, [params['train_dev_split'], 1-params['train_dev_split']])
+    # model = SimpleLSTM(params['vocab_size'], params['hidden_dim'], params['output_dim'], 
     #                    params['n_layers'], params['bidirectional'], params['dropout'], params['device']).to(params['device'])
-    model = MultiLSTM(params['input_dim'], params['input_dim2'], params['hidden_dim'], params['hidden_dim2'], params['output_dim'], 
-                       params['n_layers'], params['bidirectional'], params['dropout'], params['device']).to(params['device'])
-    loaders = {
-        'train': DataLoader(train_data, batch_size=params['batch_size'], shuffle=True),
-        'eval' : DataLoader(dev_data,   batch_size=params['batch_size'], shuffle=True),
-        'test' : DataLoader(test_data,  batch_size=params['batch_size'], shuffle=False)
-    }
 
-    model_params = {
-        'optimizer': torch.optim.RMSprop(model.parameters(), lr=params['optim_lr']), 
-        'loss_fn'  : torch.nn.BCELoss(),
-        'metric'   : F1Score(task='binary').to(params['device'])
-    }
+    # # model = SimpleLSTMEmbedded(params['vocab_size'], params['embedding_dim'], params['hidden_dim'], params['output_dim'], 
+    # #                    params['n_layers'], params['bidirectional'], params['dropout'], params['device']).to(params['device'])
 
-    # Train
-    model, train_acc, train_loss = train(model, model_params, params, loaders, mode='both', verbose=True)
+    # loaders = {
+    #     'train': DataLoader(train_data, batch_size=params['batch_size'], shuffle=True),
+    #     'eval' : DataLoader(dev_data,   batch_size=params['batch_size'], shuffle=True),
+    #     'test' : DataLoader(test_data,  batch_size=params['batch_size'], shuffle=False)
+    # }
+
+    # model_params = {
+    #     'optimizer': torch.optim.Adam(model.parameters(), lr=params['optim_lr']), 
+    #     'loss_fn'  : torch.nn.BCELoss(),
+    #     'metric'   : F1Score(task='binary').to(params['device'])
+    # }
+
+    # # Train
+    # model, train_acc, train_loss = train(model, model_params, params, loaders, mode='both', verbose=True)
 
     # Display some graphs
     # fig, (ax1, ax2) = plt.subplots(2, 1)

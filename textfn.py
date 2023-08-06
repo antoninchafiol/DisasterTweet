@@ -170,6 +170,7 @@ from nltk import pos_tag
 
 def r_stopwords(tokenized_text):
     stop = set(stopwords.words('english'))
+    print(tokenized_text)
     return([item for item in tokenized_text if item not in stop])
 
 def lemmatization(tokenized_text):
@@ -178,7 +179,7 @@ def lemmatization(tokenized_text):
 
 def stemming(tokenized_text):
     stem = PorterStemmer()
-    return([stem(item) for item in tokenized_text])
+    return([stem.stem(item) for item in tokenized_text])
 
 def penn2morphy(penntag):
     """ Converts Penn Treebank tags to WordNet. """

@@ -1,7 +1,11 @@
 import torch
-import torch.nn
 from torch.autograd import Variable
+from torch.utils.data import Dataset
+import re
+import numpy as np
    
+# --------------------------- MODELS -----------------------------
+
 class SimpleNet(torch.nn.Module):
     def __init__(self, input_len, hidden_size, output_size):
         super().__init__()
@@ -13,7 +17,6 @@ class SimpleNet(torch.nn.Module):
         fc2 = self.fc2(fc1)
         output = self.output(fc2)
         return output[:, -1]
-
 
 class SimpleLSTM(torch.nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, num_layers, bidirectional, dropout, device):
@@ -49,10 +52,7 @@ class SimpleLSTM(torch.nn.Module):
         out = self.dropout(h_out)
         out = self.fc1(out)
         out = self.output(out)
-        print(out.shape)
         return out.squeeze(1) 
-
-
 
 class MultiLSTM(torch.nn.Module):
     def __init__(self, input_dim, input_dim2, hidden_dim, hidden_dim2, output_dim, num_layers, bidirectional, dropout, device ):
@@ -103,3 +103,70 @@ class MultiLSTM(torch.nn.Module):
         out = self.output(out)
         out = out.squeeze(1)
         return out.squeeze(1)
+    
+class SimpleLSTMGloVe(torch.nn.Module):
+    # This is just a copy of the SimpleLSTM class but using the torch.nn.Embedding layer
+    def __init__(self, params, embed_weights):
+        super().__init__()
+        self.hidden_dim = params['hidden_dim']
+
+        self.embed = torch.nn.Embedding(params['vocab_size'], params['embedding_dim'])
+        self.embed.weight.data.copy_(embed_weights)
+        self.embed.weight.requires_grad = False # Hard freezed, to keep glove weights
+        self.lstm1 = torch.nn.LSTM(params['embedding_dim'], 
+                                   params['hidden_dim'],
+                                   batch_first = True
+                                   )
+        self.fc1 = torch.nn.Linear(params['hidden_dim'], params['output_dim']) 
+        self.output= torch.nn.Sigmoid()
+
+    def forward(self, x):  
+        x = self.embed(x)
+        out, (_, _) = self.lstm1(x)
+        out = out[:, -1, :]
+        out = self.fc(out).squeeze(1)
+        out = self.output(out)
+        return out
+    
+# --------------------------- DATASETS -----------------------------
+    
+class Cdataset():
+    def __init__(self, df, vocab, train=False):
+        self.train = train
+        self.vocab = vocab
+        self.seq_length = []
+        self.text = df['text'] 
+        for i in range(0, len(df['text'])):
+            reformat = re.sub(r'\'|\[|\]|\s', '', df['text'][i]).split(',')
+            # self.text.append(reformat)
+            self.seq_length.append(len(reformat))
+        vec = vocab.transform(self.text)
+        self.X = torch.from_numpy(vec.todense()).float()
+        if train==True:
+            self.Y = torch.from_numpy(np.array(df['target'])).float()
+    def __len__(self):
+        return self.X.size()[0]
+    def __getitem__(self, index):
+        res = self.X[index], self.text[index]
+        if self.train==True:
+            res = self.X[index], self.Y[index], self.text[index]
+        return res
+    def __shape__(self):
+        return self.X.size()
+    
+class CdatasetGlove(Dataset):
+    def __init__(self, df, max_seq_length, train=False):
+        self.max_seq_length = max_seq_length
+        self.train = train
+        self.X = df['text']
+        if train:
+            self.Y = df['target'].tolist()
+        
+    def __len__(self):
+        return len(self.X)
+    
+    def __getitem__(self, index):
+        res = self.X[index][:self.max_seq_length]
+        if self.train:
+            res = self.X[index][:self.max_seq_length], self.Y[index]
+        return res
