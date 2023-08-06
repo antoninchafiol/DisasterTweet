@@ -124,7 +124,7 @@ class SimpleLSTMGloVe(torch.nn.Module):
         x = self.embed(x)
         out, (_, _) = self.lstm1(x)
         out = out[:, -1, :]
-        out = self.fc(out).squeeze(1)
+        out = self.fc1(out).squeeze(1)
         out = self.output(out)
         return out
     
@@ -155,18 +155,25 @@ class Cdataset():
         return self.X.size()
     
 class CdatasetGlove(Dataset):
-    def __init__(self, df, max_seq_length, train=False):
+    def __init__(self, df, max_seq_length, word_to_index, train=False):
         self.max_seq_length = max_seq_length
         self.train = train
+        self.wti = word_to_index
         self.X = df['text']
         if train:
-            self.Y = df['target'].tolist()
+            self.Y = torch.from_numpy(np.array(df['target'])).float()
         
     def __len__(self):
         return len(self.X)
     
     def __getitem__(self, index):
-        res = self.X[index][:self.max_seq_length]
+        X = []
+        if len(self.X[index]) >= self.max_seq_length:
+            X = self.X[index][:self.max_seq_length]
+        else:
+            X = self.X[index] + ["<pad>"] * int(self.max_seq_length-len(self.X[index]))
+        X = [self.wti[word] if word in self.wti else self.wti["<unk>"] for word in X]
+        res = X
         if self.train:
-            res = self.X[index][:self.max_seq_length], self.Y[index]
+            res = torch.tensor(X), self.Y[index]
         return res
