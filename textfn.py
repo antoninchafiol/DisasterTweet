@@ -181,11 +181,37 @@ def stemming(tokenized_text):
     stem = PorterStemmer()
     return([stem.stem(item) for item in tokenized_text])
 
-def penn2morphy(penntag):
-    """ Converts Penn Treebank tags to WordNet. """
-    morphy_tag = {'NN':'n', 'JJ':'a',
-                  'VB':'v', 'RB':'r'}
-    try:
-        return morphy_tag[penntag[:2]]
-    except:
-        return 'n' 
+
+# ------ Dataset ETL ------
+import pandas as pd
+from torchtext.data import get_tokenizer
+
+def datasetProcessing(input_string, output_string):
+    df = pd.read_csv(input_string)
+    df = df.drop(columns=['keyword', 'location'])
+
+    df['text_changed'] = df['text']
+    df['text_changed'] = df['text_changed'].apply(r_upper)
+    df['text_changed'] = df['text_changed'].apply(r_hashtagsAt)
+    df['text_changed'] = df['text_changed'].apply(r_url)
+    df['text_changed'] = df['text_changed'].apply(r_specialChar)
+    df['text_changed'] = df['text_changed'].apply(entity_ref)
+    df['text_changed'] = df['text_changed'].apply(r_punctuation)
+    df['text_changed'] = df['text_changed'].apply(expand_contractions)
+    df['text_changed'] = df['text_changed'].apply(r_number)
+
+    tokenizer = get_tokenizer("basic_english")
+    df['text_changed'] = df['text_changed'].apply(tokenizer)
+    df['text_changed'] = df['text_changed'].apply(r_stopwords)
+    df['text_changed'] = df['text_changed'].apply(lemmatization)
+    df['text_changed'] = df['text_changed'].apply(lambda x: ';'.join(x))
+    df['text'] = df['text_changed']
+    df = df.drop(columns='text_changed')
+
+    df.to_csv(output_string)
+
+    return df
+
+def loadDts(path):
+    df = pd.read_csv(path)
+    df['text'] = df['text'].apply(lambda x: x.split(';'))
