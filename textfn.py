@@ -170,7 +170,6 @@ from nltk import pos_tag
 
 def r_stopwords(tokenized_text):
     stop = set(stopwords.words('english'))
-    print(tokenized_text)
     return([item for item in tokenized_text if item not in stop])
 
 def lemmatization(tokenized_text):
@@ -181,7 +180,15 @@ def stemming(tokenized_text):
     stem = PorterStemmer()
     return([stem.stem(item) for item in tokenized_text])
 
-
+def penn2morphy(penntag):
+    """ Converts Penn Treebank tags to WordNet. """
+    morphy_tag = {'NN':'n', 'JJ':'a',
+                  'VB':'v', 'RB':'r'}
+    try:
+        return morphy_tag[penntag[:2]]
+    except:
+        return 'n' 
+    
 # ------ Dataset ETL ------
 import pandas as pd
 from torchtext.data import get_tokenizer
@@ -213,5 +220,6 @@ def datasetProcessing(input_string, output_string):
     return df
 
 def loadDts(path):
-    df = pd.read_csv(path)
-    df['text'] = df['text'].apply(lambda x: x.split(';'))
+    df = pd.read_csv(path,index_col=0)
+    df['text'] = df['text'].apply(lambda x: str(x).split(';'))
+    return df
