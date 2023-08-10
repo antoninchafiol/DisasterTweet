@@ -30,11 +30,12 @@ class PositionalEncoder(torch.nn.Module):
         pe = torch.zeros(max_seq_length, d_model)
         for pos in range(max_seq_length):
             for i in range(0, d_model, 2):
-                exponent = (2*i)/d_model
-                pe[pos, i]   = torch.sin(pos / torch.pow(10000, exponent))
-                pe[pos, i+1] = torch.cos(pos / torch.pow(10000, exponent))
-
+                pe[pos, i]   = torch.sin(pos / torch.pow(torch.tensor(10000), 
+                                                         torch.tensor( (2*i)/d_model )))
+                pe[pos, i+1] = torch.cos(pos / torch.pow(torch.tensor(10000), 
+                                                         torch.tensor( (2*(i+1))/d_model )))
         pe = pe.unsqueeze(0)
         self.register_buffer('pe', pe)
+        
     def forward(self, x):
-        return x + self.pe[:, x.size(1)]
+        return x + self.pe[:, :x.size(1)]
