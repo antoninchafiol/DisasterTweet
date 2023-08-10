@@ -26,8 +26,15 @@ class Embedder(torch.nn.Module):
 class PositionalEncoder(torch.nn.Module):
     def __init__(self, max_seq_length, d_model):
         super().__init__()
-        self.d_model = d_model
-        self.pe = torch.zeros(max_seq_length, d_model)
-        
-    def forwward(self, x):
-        return x
+        self.d_model = d_model 
+        pe = torch.zeros(max_seq_length, d_model)
+        for pos in range(max_seq_length):
+            for i in range(0, d_model, 2):
+                exponent = (2*i)/d_model
+                pe[pos, i]   = torch.sin(pos / torch.pow(10000, exponent))
+                pe[pos, i+1] = torch.cos(pos / torch.pow(10000, exponent))
+
+        pe = pe.unsqueeze(0)
+        self.register_buffer('pe', pe)
+    def forward(self, x):
+        return x + self.pe[:, x.size(1)]
