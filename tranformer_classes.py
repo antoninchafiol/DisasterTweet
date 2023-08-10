@@ -24,7 +24,21 @@ class Embedder(torch.nn.Module):
         return self.embed(x)
     
 class PositionalEncoder(torch.nn.Module):
+    '''
+    Class for computing and forward pass the positional encoding 
+    '''
     def __init__(self, max_seq_length, d_model):
+        '''
+        Construct the PE matrix and register it as a buffer
+
+        Parameters
+        ----------
+        max_seq_length: int
+            Maximum length of the sentence
+            
+        d_model: int
+            Dimension of the model
+        '''
         super().__init__()
         self.d_model = d_model 
         pe = torch.zeros(max_seq_length, d_model)
@@ -36,6 +50,6 @@ class PositionalEncoder(torch.nn.Module):
                                                          torch.tensor( (2*(i+1))/d_model )))
         pe = pe.unsqueeze(0)
         self.register_buffer('pe', pe)
-        
+
     def forward(self, x):
         return x + self.pe[:, :x.size(1)]
