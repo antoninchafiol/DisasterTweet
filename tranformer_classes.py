@@ -251,14 +251,64 @@ class EncoderBlock(nn.Module):
         Apply forward computation
         '''
         # Attention
-        x = self.mha(x,x,x, mask)
-        x = x + self.drop1(x)
+        x2 = self.mha(x,x,x, mask)
+        x = x + self.drop1(x2)
         x = self.norm1(x)
 
         # Feed-Forward
-        x = self.ff(x)
-        x = x + self.drop2(x)
+        x2 = self.ff(x)
+        x = x + self.drop2(x2)
         x = self.norm2(x)
 
         return x
 
+class DecoderBlock(nn.Module):
+    '''
+    Implementation of the Decoder block
+    '''
+    def __init__(self, d_model, heads, dropout=0.1):
+        '''
+        Initialize all layers of the decoder
+
+        Parameters
+        ----------
+        d_model: int
+            Dimension of the model/embedding
+        heads: int
+            Number of heads
+        dropout: float
+            Dropout rate
+        '''
+        super().__init__()
+        self.mha1 = MultiHeadAttention(heads, d_model, dropout=dropout)
+        self.drop1 = nn.Dropout(dropout)
+        self.norm1 = LayerNorm(d_model)
+
+        self.mha2 = MultiHeadAttention(heads, d_model, dropout=dropout)
+        self.drop2 = nn.Dropout(dropout)
+        self.norm2 = LayerNorm(d_model)
+
+        self.ff = FeedForward(d_model, dropout=dropout)
+        self.drop3 = nn.Dropout(dropout)
+        self.norm3 = LayerNorm(d_model)
+
+    def forward(self, x, enc_output, src_mask, trg_mask):
+        '''
+        Apply forward computation
+        '''
+        # First Attention
+        mha_output = self.mha1(x,x,x, trg_mask)
+        x = x + self.drop1(mha_output)
+        x = self.norm1(x)
+
+        # Second Attention
+        mha_output = self.mha2(x, enc_output, enc_output, src_mask)
+        x = x + self.drop2(mha_output)
+        x = self.norm2(x)
+
+        # Feed-Forward
+        ff_output = self.ff(x)
+        x = x + self.drop3(ff_output)
+        x = self.norm3(x)
+
+        return x
