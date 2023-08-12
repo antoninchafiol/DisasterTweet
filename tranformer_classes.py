@@ -2,6 +2,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import copy
 
 class Embedder(torch.nn.Module):
     '''
@@ -293,6 +294,7 @@ class DecoderBlock(nn.Module):
         self.norm3 = LayerNorm(d_model)
 
     def forward(self, x, enc_output, src_mask, trg_mask):
+
         '''
         Apply forward computation
         '''
@@ -312,3 +314,18 @@ class DecoderBlock(nn.Module):
         x = self.norm3(x)
 
         return x
+    
+def get_clones(module, nb):
+    return nn.ModuleList([copy.deepcopy(module) for i in range(nb)])
+
+
+
+
+
+
+
+
+
+
+
+
