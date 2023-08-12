@@ -1,5 +1,6 @@
 
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 
 class Embedder(torch.nn.Module):
@@ -59,7 +60,7 @@ class MultiHeadAttention(torch.nn.Module):
     '''
     Create and compute Multi-Head Attention with "embedded" Scaled Dot-Product Attention 
     '''
-    def __init__(self, heads, d_model, p_drop=0.1):
+    def __init__(self, heads, d_model, dropout=0.1):
         '''
         Constructing the differents layers and variables 
 
@@ -76,13 +77,13 @@ class MultiHeadAttention(torch.nn.Module):
         self.d_model = d_model
         self.h = heads
         self.d_k = d_model // heads
-        self.p_drop = p_drop
+        self.p_drop = dropout
 
         self.q = torch.nn.Linear(d_model, d_model)
         self.k = torch.nn.Linear(d_model, d_model)
         self.v = torch.nn.Linear(d_model, d_model)
 
-        self.dropout = torch.nn.Dropout(p_drop)
+        self.dropout = torch.nn.Dropout(dropout)
         self.output  = torch.nn.Linear(d_model, d_model)
 
     def scaled_dot_product_attention(self, q,k,v, d_k, mask=None, dropout=None):
@@ -220,5 +221,44 @@ class LayerNorm(torch.nn.Module):
         norm = (z-mu / sigma) * self.alpha + self.beta
         return norm
 
+class EncoderBlock(nn.Module):
+    '''
+    Implementation of the Encoder block
+    '''
+    def __init__(self, d_model, heads, dropout=0.1):
+        '''
+        Initialize all layers of the encoder
 
+        Parameters
+        ----------
+        d_model: int
+            Dimension of the model/embedding
+        heads: int
+            Number of heads
+        dropout: float
+            Dropout rate
+        '''
+        super().__init__()
+        self.mha = MultiHeadAttention(heads, d_model, dropout=dropout)
+        self.norm1 = LayerNorm(d_model)
+        self.drop1 = nn.Dropout(dropout)
+        self.ff = FeedForward(d_model, dropout=dropout)
+        self.norm2 = LayerNorm(d_model)
+        self.drop2 = nn.Dropout(dropout)
+    
+    def forward(self, x, mask):
+        '''
+        Apply forward computation
+        '''
+        # Attention
+        x = self.mha(x,x,x, mask)
+        x = x + self.drop1(x)
+        x = self.norm1(x)
+
+        # Feed-Forward
+        x = self.ff(x)
+        x = x + self.drop2(x)
+        x = self.norm2(x)
+
+        return x
 
