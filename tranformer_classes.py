@@ -240,24 +240,24 @@ class EncoderBlock(nn.Module):
         '''
         super().__init__()
         self.mha = MultiHeadAttention(heads, d_model, dropout=dropout)
-        self.norm1 = LayerNorm(d_model)
         self.drop1 = nn.Dropout(dropout)
+        self.norm1 = LayerNorm(d_model)
         self.ff = FeedForward(d_model, dropout=dropout)
-        self.norm2 = LayerNorm(d_model)
         self.drop2 = nn.Dropout(dropout)
+        self.norm2 = LayerNorm(d_model)
     
     def forward(self, x, mask):
         '''
         Apply forward computation
         '''
         # Attention
-        x2 = self.mha(x,x,x, mask)
-        x = x + self.drop1(x2)
+        mha_output = self.mha(x,x,x, mask)
+        x = x + self.drop1(mha_output)
         x = self.norm1(x)
 
         # Feed-Forward
-        x2 = self.ff(x)
-        x = x + self.drop2(x2)
+        ff_output = self.ff(x)
+        x = x + self.drop2(ff_output)
         x = self.norm2(x)
 
         return x
