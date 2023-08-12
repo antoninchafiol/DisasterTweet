@@ -44,7 +44,7 @@ class PositionalEncoder(torch.nn.Module):
         '''
         super().__init__()
         self.d_model = d_model 
-        pe = torch.zeros(max_seq_length, d_model)
+        pe = torch.zeros(d_model, max_seq_length=30)
         for pos in range(max_seq_length):
             for i in range(0, d_model, 2):
                 pe[pos, i]   = torch.sin(pos / torch.pow(torch.tensor(10000), 
@@ -316,7 +316,56 @@ class DecoderBlock(nn.Module):
         return x
     
 def get_clones(module, nb):
+    '''
+    Create new instances of a Module 
+
+    Parameters
+    ----------
+    module: nn.Module
+        The requested module
+    nb: int
+        How many module to duplicate
+    '''
     return nn.ModuleList([copy.deepcopy(module) for i in range(nb)])
+
+class Encoder(nn.Module):
+    '''
+    Whole Encoder part
+    '''
+    def __init__(self, vocab_size, d_model, heads, N):
+        '''
+        Initialize all layers used to implement the whole encoder part
+
+        Parameters
+        ----------
+        vocab_size: int
+            Size of the used vocabulary
+        d_model: int
+            Dimension of the model/embedding
+        heads: int
+            Number of heads 
+        N: int 
+            Number of EncoderBlock to generate
+
+        '''
+        super().__init__()
+        self.N = N
+        self.embed = Embedder(vocab_size, d_model)
+        self.pe = PositionalEncoder(d_model)
+        self.blocks = get_clones(EncoderBlock(d_model, heads), N)
+        self.norm = LayerNorm(d_model)
+
+    def forward(self, src, mask):
+        '''
+        Apply forward computation from embedding to last normalization
+        '''
+        x = self.embed(src)
+        x = self.pe(x)
+        for i in range(self.blocks):
+            x = self.blocks[i](x, mask)
+        x = self.norm
+        return x
+    
 
 
 
