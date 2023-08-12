@@ -187,3 +187,38 @@ class FeedForward(torch.nn.Module):
         x = self.dropout(x)
         x = self.fc2(x)
         return x
+    
+class LayerNorm(torch.nn.Module):
+    '''
+    Create and compute the layer normalization
+    '''
+    def __init__(self, d_model, epsilon=1e-6):
+        '''
+        Initialize the learnable parameters and store epsilon's value
+        
+        Parameters
+        ----------
+        d_model: int
+            Dimension of the model/embedding 
+        epsilon: float
+            Value of epsilon 
+        '''
+        super().__init__()
+        self.size = d_model
+        self.alpha = torch.nn.Parameter(torch.ones(d_model))
+        self.beta = torch.nn.Parameter(torch.zeros(d_model))
+        self.eps = epsilon
+        
+    def forward(self, z):
+        '''
+        Compute the layer normalization as stated '
+        '''
+        mean = z.mean(-1, keepdim=True)
+        std = z.std(-1, keepdim=True)
+        mu = z-mean
+        sigma = std + self.eps
+        norm = (z-mu / sigma) * self.alpha + self.beta
+        return norm
+
+
+
