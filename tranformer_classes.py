@@ -423,7 +423,25 @@ class SentimentAnalysisTransformer(nn.Module):
     '''
     Create a sentiment analysis tranformer network.
     '''
-    def __init__(self, vocab_size, num_classes, d_model, N, heads):
+    def __init__(self, vocab_size, num_classes, d_model, N, heads, embed_weights):
+        '''
+        Initialize the tranformer for sentiment analysis
+
+        Parameters
+        ----------
+        vocab_size: int
+            Size of vocabulary
+        num_classes: int
+            Number of output classes
+        d_model: int
+            Dimension of the model
+        N: int
+            Number of blocks to generate
+        heads: int
+            Number of heads
+        embed_weights: tensor
+            Glove Embedding weights for Embedding layer
+        '''
         super().__init__()
         self.encoder = Encoder(vocab_size, d_model, N, heads)
         self.out = nn.Linear(d_model, num_classes)
