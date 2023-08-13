@@ -366,6 +366,43 @@ class Encoder(nn.Module):
         x = self.norm
         return x
     
+class Decoder(nn.Module):
+    '''
+    Whole Decoder part
+    '''
+    def __init__(self, vocab_size, d_model, heads, N):
+        '''
+        Initialize all layers used to implement the whole ddecoder part
+
+        Parameters
+        ----------
+        vocab_size: int
+            Size of the used vocabulary
+        d_model: int
+            Dimension of the model/embedding
+        heads: int
+            Number of heads 
+        N: int 
+            Number of EncoderBlock to generate
+
+        '''
+        super().__init__()
+        self.N = N
+        self.embed = Embedder(vocab_size, d_model)
+        self.pe = PositionalEncoder(d_model)
+        self.blocks = get_clones(DecoderBlock(d_model, heads), N)
+        self.norm = LayerNorm(d_model)
+
+    def forward(self, trg, e_outputs, src_mask, trg_mask):
+        '''
+        Apply forward computation from embedding to last normalization
+        '''
+        x = self.embed(trg)
+        x = self.pe(x)
+        for i in range(self.blocks):
+            x = self.blocks[i](x,  e_outputs, src_mask, trg_mask)
+        x = self.norm
+        return x    
 
 
 
