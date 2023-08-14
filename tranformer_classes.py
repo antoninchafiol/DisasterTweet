@@ -452,7 +452,8 @@ class SentimentAnalysisTransformer(nn.Module):
         e_outputs = self.encoder(x, mask)
         output = self.out(e_outputs)
         output = torch.sigmoid(output)
-        return output
+        output = output[:, -1, :]
+        return output.squeeze(1)
 
 
 
