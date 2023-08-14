@@ -115,7 +115,7 @@ class MultiHeadAttention(torch.nn.Module):
             mask.unsqueeze(1)
             scores = scores.masked_fill(mask==0, -1e9)
         
-        attention_weights = F.softmax(scores, dims=-1)
+        attention_weights = F.softmax(scores, dim=-1)
 
         if dropout is not None:
             attention_weights = dropout(attention_weights)
@@ -363,9 +363,9 @@ class Encoder(nn.Module):
         '''
         x = self.embed(src)
         x = self.pe(x)
-        for i in range(self.blocks):
+        for i in range(len(self.blocks)):
             x = self.blocks[i](x, mask)
-        x = self.norm
+        x = self.norm(x)
         return x
     
 class Decoder(nn.Module):
@@ -403,7 +403,7 @@ class Decoder(nn.Module):
         x = self.pe(x)
         for i in range(self.blocks):
             x = self.blocks[i](x,  e_outputs, src_mask, trg_mask)
-        x = self.norm
+        x = self.norm(x)
         return x    
 
 class SeqToSeqTransformer(nn.Module):
