@@ -8,20 +8,22 @@ class Embedder(torch.nn.Module):
     '''
     The Embedding layer in an allocated class
     '''
-    def __init__(self, params, d_model) -> None:
+    def __init__(self, vocab_size, d_model, embed_weights) -> None:
         '''
         Initialize and freeze the embedding layer
 
         Parameters
         ----------
-        params --> ['vocab_size']: dict --> int
-            All params related to model --> Size of the vocabulary
+        vocab_size int
+            Size of the vocabulary
         d_model: int
             Dimension of the model
+        embed_weights: tensor
+            Glove Embedding weights for Embedding layer
         '''
         super().__init__()
-        self.embed = torch.nn.Embedding(params['vocab_size'], d_model)
-        self.embed.weight.data.copy_(d_model)
+        self.embed = torch.nn.Embedding(vocab_size, d_model)
+        self.embed.weight.data.copy_(embed_weights)
         self.embed.weight.requires_grad = False
     def forward(self, x):
         return self.embed(x)
@@ -332,7 +334,7 @@ class Encoder(nn.Module):
     '''
     Whole Encoder part
     '''
-    def __init__(self, vocab_size, d_model, heads, N):
+    def __init__(self, vocab_size, d_model, heads, N, embed_weights):
         '''
         Initialize all layers used to implement the whole encoder part
 
@@ -346,11 +348,12 @@ class Encoder(nn.Module):
             Number of heads 
         N: int 
             Number of EncoderBlock to generate
-
+        embed_weights: tensor
+            Glove Embedding weights for Embedding layer
         '''
         super().__init__()
         self.N = N
-        self.embed = Embedder(vocab_size, d_model)
+        self.embed = Embedder(vocab_size, d_model, embed_weights)
         self.pe = PositionalEncoder(d_model)
         self.blocks = get_clones(EncoderBlock(d_model, heads), N)
         self.norm = LayerNorm(d_model)
@@ -443,13 +446,14 @@ class SentimentAnalysisTransformer(nn.Module):
             Glove Embedding weights for Embedding layer
         '''
         super().__init__()
-        self.encoder = Encoder(vocab_size, d_model, N, heads)
+        self.encoder = Encoder(vocab_size, d_model, N, heads, embed_weights)
         self.out = nn.Linear(d_model, num_classes)
+        self.sigmoid = F.sigmoid()
 
     def forward(self, x, mask):
         e_outputs = self.encoder(x, mask)
         output = self.out(e_outputs)
-        output = torch.sigmoid(output)
+        output = self.sigmoid(output)
         return output
 
 
