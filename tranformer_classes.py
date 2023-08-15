@@ -455,6 +455,7 @@ class SentimentAnalysisTransformer(nn.Module):
     def forward(self, x, mask):
         e_outputs = self.encoder(x, mask)
         output = self.out(e_outputs)
+        # print(output[:, -1, :].squeeze(1))
         output = output[:, -1, :].squeeze(1)    
         output = self.sig(output)
 
