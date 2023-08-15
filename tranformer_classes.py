@@ -421,6 +421,8 @@ class SeqToSeqTransformer(nn.Module):
         output = self.out(d_output)
         return output
 
+
+
 class SentimentAnalysisTransformer(nn.Module):
     '''
     Create a sentiment analysis tranformer network.
@@ -447,14 +449,16 @@ class SentimentAnalysisTransformer(nn.Module):
         super().__init__()
         self.encoder = Encoder(vocab_size, max_seq_length, d_model, N, heads, embed_weights)
         self.out = nn.Linear(d_model, num_classes)
+        self.sig = nn.Sigmoid()
+        self.p = True
 
     def forward(self, x, mask):
         e_outputs = self.encoder(x, mask)
         output = self.out(e_outputs)
-        output = torch.sigmoid(output)
-        output = output[:, -1, :]
-        return output.squeeze(1)
+        output = output[:, -1, :].squeeze(1)    
+        output = self.sig(output)
 
+        return output
 
 
 
