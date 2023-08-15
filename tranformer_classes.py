@@ -112,7 +112,8 @@ class MultiHeadAttention(torch.nn.Module):
         scores = torch.matmul(q,k.transpose(-2,-1)) / torch.sqrt(torch.tensor(d_k))
 
         if mask is not None:
-            mask.unsqueeze(1)
+            mask = mask.unsqueeze(1)
+            mask = mask.unsqueeze(-1)
             scores = scores.masked_fill(mask==0, -1e9)
         
         attention_weights = F.softmax(scores, dim=-1)
@@ -152,7 +153,7 @@ class MultiHeadAttention(torch.nn.Module):
         Q = Q.transpose(1,2)
         V = V.transpose(1,2)
 
-        attention_score = self.scaled_dot_product_attention(Q,K,V, self.d_k, mask=None, dropout=self.dropout) 
+        attention_score = self.scaled_dot_product_attention(Q,K,V, self.d_k, mask=mask, dropout=self.dropout) 
 
         concat = attention_score.transpose(1,2).contiguous().view(batch_size, -1, self.d_model)
 
@@ -455,7 +456,6 @@ class SentimentAnalysisTransformer(nn.Module):
     def forward(self, x, mask):
         e_outputs = self.encoder(x, mask)
         output = self.out(e_outputs)
-        # print(output[:, -1, :].squeeze(1))
         output = output[:, -1, :].squeeze(1)    
         output = self.sig(output)
 
